@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mail — Amy Lau</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; font-size: 14px; background: #f6f8fc; color: #202124; }
+  button, input, textarea { font-family: inherit; }
+
+  /* ---------- Top bar ---------- */
+  .topbar { height: 64px; display: flex; align-items: center; gap: 16px; padding: 0 16px 0 20px; }
+  .brand { display: flex; align-items: center; gap: 10px; width: 214px; flex-shrink: 0; }
+  .brand .logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg,#1a73e8,#34a853); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; }
+  .brand span { font-size: 22px; color: #444746; }
+  .search { flex: 1; max-width: 720px; display: flex; align-items: center; background: #e9eef6; border-radius: 24px; padding: 0 16px; height: 46px; }
+  .search:focus-within { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .search svg { flex-shrink: 0; }
+  .search input { flex: 1; border: none; background: transparent; outline: none; font-size: 15px; padding: 0 12px; min-width: 0; }
+  .search .clear { border: none; background: none; cursor: pointer; font-size: 18px; color: #5f6368; }
+  .topbar .spacer { flex: 1; }
+  .sample-btn { border: 1px solid #f9ab00; background: #fef7e0; color: #b06000; border-radius: 18px; padding: 8px 16px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .sample-btn:hover { background: #feefc3; }
+  .me { display: flex; align-items: center; gap: 8px; color: #5f6368; font-size: 13px; white-space: nowrap; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex-shrink: 0; }
+
+  /* ---------- Layout ---------- */
+  .app { display: grid; grid-template-columns: 240px 1fr; height: calc(100vh - 64px); }
+  .sidebar { padding: 4px 12px 12px 8px; overflow-y: auto; }
+  .compose-btn { display: inline-flex; align-items: center; gap: 12px; background: #c2e7ff; border: none; border-radius: 16px; padding: 18px 24px 18px 20px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 4px 0 16px 8px; }
+  .compose-btn:hover { box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .folder { display: flex; align-items: center; gap: 14px; width: 100%; border: none; background: none; text-align: left; padding: 0 12px 0 20px; height: 34px; border-radius: 0 17px 17px 0; cursor: pointer; font-size: 14px; color: #202124; }
+  .folder:hover { background: #e9eaee; }
+  .folder.active { background: #d3e3fd; font-weight: 700; }
+  .folder .ico { width: 20px; text-align: center; color: #444746; }
+  .folder .count { margin-left: auto; font-size: 12px; font-weight: 700; }
+  .side-note { margin: 18px 12px 0 20px; font-size: 12px; color: #5f6368; line-height: 1.5; }
+
+  .main { background: #fff; border-radius: 16px 16px 0 0; margin-right: 16px; display: flex; flex-direction: column; overflow: hidden; }
+  .main-bar { height: 48px; border-bottom: 1px solid #f1f3f4; display: flex; align-items: center; padding: 0 16px; gap: 8px; flex-shrink: 0; }
+  .main-bar .title { font-weight: 600; font-size: 15px; }
+  .main-bar .spacer { flex: 1; }
+  .main-bar .meta { font-size: 12px; color: #5f6368; }
+  .icon-btn { border: none; background: none; cursor: pointer; border-radius: 18px; padding: 7px 12px; font-size: 13px; color: #444746; display: inline-flex; align-items: center; gap: 6px; }
+  .icon-btn:hover { background: #f1f3f4; }
+  .scroll { overflow-y: auto; flex: 1; }
+
+  /* message list */
+  .row { display: grid; grid-template-columns: 200px 1fr auto; gap: 14px; align-items: center; padding: 0 16px 0 20px; height: 42px; border-bottom: 1px solid #f1f3f4; cursor: pointer; background: #f2f6fc; }
+  .row.unread { background: #fff; font-weight: 700; }
+  .row:hover { box-shadow: inset 1px 0 0 #dadce0, inset -1px 0 0 #dadce0, 0 1px 2px rgba(60,64,67,.3); position: relative; z-index: 1; }
+  .row .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #5f6368; font-weight: 400; }
+  .row .what b { color: #202124; }
+  .row.unread .what b { font-weight: 700; }
+  .row .when { font-size: 12px; color: #5f6368; display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+  .row.unread .when { color: #202124; font-weight: 700; }
+  .empty { padding: 60px 20px; text-align: center; color: #5f6368; }
+
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .tag-pending { background: #fef7e0; color: #b06000; }
+  .tag-ok { background: #e6f4ea; color: #188038; }
+  .tag-back { background: #fce8e6; color: #c5221f; }
+  .tag-ext { background: #f1f3f4; color: #5f6368; font-weight: 600; }
+  .clip { color: #5f6368; font-weight: 400; }
+
+  /* reading pane */
+  .read { padding: 20px 28px 40px 28px; }
+  .read h1 { font-size: 22px; font-weight: 400; margin: 0 0 18px 44px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .sender { display: flex; gap: 12px; align-items: flex-start; }
+  .sender .avatar { width: 40px; height: 40px; font-size: 14px; }
+  .sender .name { font-weight: 700; }
+  .sender .addr { color: #5f6368; font-size: 12px; font-weight: 400; }
+  .sender .to { color: #5f6368; font-size: 12px; margin-top: 2px; }
+  .sender .time { margin-left: auto; color: #5f6368; font-size: 12px; white-space: nowrap; }
+  .msg-body { margin: 18px 0 0 52px; white-space: pre-wrap; line-height: 1.6; word-break: break-word; }
+  .attach-card { margin: 18px 0 0 52px; border: 1px solid #dadce0; border-radius: 8px; max-width: 520px; overflow: hidden; }
+  .attach-card .head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f8f9fa; font-weight: 600; font-size: 13px; }
+  .attach-card pre { margin: 0; padding: 10px 12px; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; max-height: 180px; overflow: auto; }
+  .file-ico { width: 20px; height: 24px; background: #188038; color: #fff; font-size: 8px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; }
+  .read-actions { margin: 24px 0 0 52px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .pill-btn { border: 1px solid #747775; background: #fff; border-radius: 18px; padding: 8px 20px; font-weight: 600; cursor: pointer; color: #444746; }
+  .pill-btn:hover { background: #f1f3f4; }
+  .pill-btn.primary { background: #0b57d0; border-color: #0b57d0; color: #fff; }
+  .status-box { margin: 0 0 18px 52px; border-radius: 8px; padding: 10px 14px; font-size: 13px; }
+  .status-box.pending { background: #fef7e0; color: #7a4100; }
+  .status-box.ok { background: #e6f4ea; color: #0d652d; }
+  .status-box.back { background: #fce8e6; color: #a50e0e; }
+
+  /* ---------- Compose window ---------- */
+  .compose { position: fixed; right: 24px; bottom: 0; width: 560px; max-width: calc(100% - 16px); background: #fff; border-radius: 8px 8px 0 0; box-shadow: 0 8px 24px rgba(0,0,0,.25); display: flex; flex-direction: column; max-height: calc(100vh - 80px); z-index: 5; }
+  .compose[hidden] { display: none; }
+  .compose-head { background: #f2f6fc; padding: 9px 8px 9px 14px; border-radius: 8px 8px 0 0; display: flex; align-items: center; cursor: pointer; font-weight: 600; font-size: 14px; }
+  .compose-head .spacer { flex: 1; }
+  .compose-head button { border: none; background: none; cursor: pointer; width: 28px; height: 26px; border-radius: 4px; font-size: 16px; color: #444746; }
+  .compose-head button:hover { background: #e1e5ea; }
+  .compose.min .compose-main { display: none; }
+  .compose.min { width: 280px; }
+  .compose-main { display: flex; flex-direction: column; min-height: 0; }
+  .compose-scroll { overflow-y: auto; }
+  .field { display: flex; align-items: center; border-bottom: 1px solid #f1f3f4; margin: 0 14px; }
+  .field label { color: #5f6368; width: 56px; flex-shrink: 0; }
+  .field input { flex: 1; border: none; outline: none; padding: 9px 0; font-size: 14px; background: transparent; min-width: 0; }
+  .field.flagged input { background: #fff176; }
+  .field.unverified { border-bottom-color: #c5221f; }
+  .recipient-box { margin: 6px 14px 0; padding: 7px 10px; border-radius: 6px; font-size: 12px; line-height: 1.5; }
+  .recipient-box.bad { background: #fce8e6; color: #a50e0e; border: 1px solid #f5c2c0; }
+  .recipient-box.good { background: #e6f4ea; color: #0d652d; }
+  .recipient-box ul { margin: 2px 0 0; padding-left: 18px; }
+  .recipient-box[hidden] { display: none; }
+  .cat-chip { display: inline-block; background: #fff; border-radius: 8px; padding: 0 6px; font-size: 11px; margin-right: 4px; }
+  .flag-banner { margin: 8px 14px 0; padding: 8px 10px; border-radius: 6px; background: #fef7e0; color: #b06000; font-size: 12px; display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+
+  .hl-wrap { position: relative; background: #fff; }
+  .hl-wrap.att { background: #f8f9fa; }
+  .hl-backdrop, .hl-wrap textarea { font-family: inherit; font-size: 14px; line-height: 1.5; padding: 12px 14px; margin: 0; border: 0; white-space: pre-wrap; overflow-wrap: break-word; word-wrap: break-word; letter-spacing: normal; }
+  .hl-wrap.att .hl-backdrop, .hl-wrap.att textarea { font-family: Consolas, monospace; font-size: 12px; }
+  .hl-backdrop { position: absolute; top: 0; left: 0; overflow: hidden; color: transparent; pointer-events: none; }
+  .hl-backdrop mark { color: transparent; background: #fff176; padding: 0; border-radius: 2px; box-shadow: none; }
+  .hl-wrap textarea { position: relative; display: block; width: 100%; background: transparent; outline: none; resize: vertical; color: #202124; }
+  #body { min-height: 200px; }
+  #attachment { min-height: 70px; }
+  .attach-box { margin: 8px 14px 10px; border: 1px solid #dadce0; border-radius: 6px; overflow: hidden; }
+  .attach-box[hidden] { display: none; }
+  .attach-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa; }
+  .attach-row input[type=text] { flex: 1; border: none; background: transparent; font-weight: 600; outline: none; min-width: 0; }
+  .link { font-size: 12px; color: #1a73e8; cursor: pointer; background: none; border: none; padding: 0; }
+  .compose-foot { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+  .compose-foot .spacer { flex: 1; }
+  .send-btn { background: #0b57d0; color: #fff; border: none; border-radius: 18px; padding: 9px 24px; font-weight: 600; cursor: pointer; }
+  .send-btn:hover:not(:disabled) { background: #0842a0; }
+  .send-btn:disabled { opacity: .6; cursor: wait; }
+  .attach-btn { border: none; background: none; cursor: pointer; font-size: 13px; color: #444746; border-radius: 16px; padding: 7px 10px; }
+  .attach-btn:hover { background: #f1f3f4; }
+
+  /* ---------- Overlay card (DLP) ---------- */
+  .overlay { position: fixed; inset: 0; background: rgba(32,33,36,.55); display: none; align-items: flex-start; justify-content: center; padding: 28px 16px; overflow-y: auto; z-index: 10; }
+  .overlay.show { display: flex; }
+  .card { background: #fff; width: 780px; max-width: 100%; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.3); overflow: hidden; }
+  .card-head { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+  .card-head h2 { margin: 0; font-size: 18px; }
+  .card-head p { margin: 2px 0 0; color: #5f6368; font-size: 13px; }
+  .head-warn { background: #fef7e0; border-bottom: 3px solid #f9ab00; }
+  .head-ok { background: #e6f4ea; border-bottom: 3px solid #188038; }
+  .head-block { background: #fce8e6; border-bottom: 3px solid #c5221f; }
+  .head-scan { background: #e8f0fe; border-bottom: 3px solid #1a73e8; }
+  .badge-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .card-body { padding: 18px 20px; }
+  .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #5f6368; margin: 16px 0 6px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .section-title:first-child { margin-top: 0; }
+  .preview { border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow-y: auto; background: #fafafa; line-height: 1.55; }
+  .preview.mono { font-family: Consolas, monospace; font-size: 12px; }
+  mark { background: #fff176; padding: 1px 2px; border-radius: 2px; box-shadow: inset 0 -2px 0 #f9ab00; }
+  mark.kept { background: #ffe0b2; box-shadow: inset 0 -2px 0 #e8710a; }
+  sup { font-size: 9px; color: #b06000; font-weight: 700; margin-left: 1px; }
+  del { background: #fce8e6; color: #a50e0e; }
+  ins { background: #ceead6; color: #0d652d; text-decoration: none; padding: 0 2px; border-radius: 2px; }
+  .risk-pill { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 700; }
+  .risk-high { background: #fce8e6; color: #c5221f; }
+  .risk-medium { background: #fef7e0; color: #b06000; }
+  .risk-low { background: #e6f4ea; color: #188038; }
+  .reasons { list-style: none; padding: 0; margin: 0; }
+  .reasons li { border: 1px solid #e0e0e0; border-left: 4px solid #f9ab00; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
+  .reasons li.high { border-left-color: #c5221f; }
+  .reasons li.resolved { border-left-color: #188038; background: #fbfefc; }
+  .reasons .r-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .reasons .num { background: #f9ab00; color: #fff; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .reasons .cat { font-weight: 700; }
+  .reasons .src { font-size: 11px; color: #5f6368; background: #f1f3f4; padding: 1px 6px; border-radius: 8px; }
+  .reasons .state-tag { margin-left: auto; font-size: 12px; color: #5f6368; }
+  .reasons .reason { margin: 6px 0 4px; }
+  .reasons .sugg { color: #188038; font-size: 13px; }
+  .reasons .sugg::before { content: "Suggestion: "; font-weight: 700; }
+  .f-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .f-edit { display: flex; gap: 6px; margin-top: 8px; }
+  .f-edit input { flex: 1; border: 1px solid #dadce0; border-radius: 6px; padding: 5px 8px; min-width: 0; }
+  .mini { border: 1px solid #dadce0; background: #fff; border-radius: 14px; padding: 4px 12px; font-size: 12px; cursor: pointer; color: #3c4043; }
+  .mini:hover:not(:disabled) { background: #f1f3f4; }
+  .mini.on { background: #1a73e8; border-color: #1a73e8; color: #fff; }
+  .mini:disabled { opacity: .5; cursor: not-allowed; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: #1a73e8; font-size: 13px; }
+  pre.json { background: #263238; color: #c3e88d; padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; max-height: 260px; }
+  .card-foot { border-top: 1px solid #e0e0e0; background: #fafafa; }
+  .plan-line { padding: 10px 20px 0; font-size: 13px; font-weight: 600; }
+  .plan-line.ok { color: #188038; }
+  .plan-line.warn { color: #b06000; }
+  .card-actions { display: flex; gap: 10px; justify-content: flex-end; padding: 12px 20px 14px; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 18px; padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-primary { background: #0b57d0; color: #fff; }
+  .btn-ghost { background: #fff; color: #3c4043; border: 1px solid #dadce0; }
+  .btn-ghost:hover { background: #f1f3f4; }
+  .btn-green { background: #188038; color: #fff; }
+  .btn-red { background: #c5221f; color: #fff; }
+  .spinner { width: 22px; height: 22px; border: 3px solid #c6dafc; border-top-color: #1a73e8; border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .kv { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 13px; }
+  .kv > div:nth-child(odd) { color: #5f6368; }
+  .blocked-msg { font-size: 22px; font-weight: 700; color: #a50e0e; margin: 0 0 6px; }
+  .notice { font-size: 12px; color: #5f6368; margin-top: 10px; }
+
+  .toasts { position: fixed; left: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 20; }
+  .toast { background: #323232; color: #fff; padding: 12px 16px; border-radius: 6px; max-width: 380px; box-shadow: 0 4px 12px rgba(0,0,0,.3); font-size: 13px; }
+  .toast b { display: block; margin-bottom: 2px; }
+
+  @media (max-width: 800px) {
+    .brand { width: auto; } .brand span, .me span { display: none; }
+    .app { grid-template-columns: 1fr; height: auto; }
+    .sidebar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 4px 8px; }
+    .compose-btn { margin: 0 8px 0 0; padding: 10px 16px; }
+    .folder { width: auto; border-radius: 17px; padding: 0 14px; }
+    .side-note { display: none; }
+    .main { margin: 0; border-radius: 0; min-height: calc(100vh - 130px); }
+    .row { grid-template-columns: 1fr auto; height: auto; padding: 10px 14px; gap: 2px 10px; }
+    .row .what { grid-column: 1 / -1; grid-row: 2; }
+    .read { padding: 16px; } .read h1 { margin-left: 0; } .msg-body, .attach-card, .read-actions, .status-box { margin-left: 0; }
+    .kv { grid-template-columns: 1fr; }
+    .compose { right: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="logo">M</div><span>Mail</span></div>
+  <label class="search">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="#444746"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <input id="search" placeholder="Search mail" autocomplete="off">
+    <button class="clear" id="clearSearch" title="Clear search" hidden>&times;</button>
+  </label>
+  <span class="spacer"></span>
+  <button class="sample-btn" id="loadSample">Load Sample Risky Email</button>
+  <div class="me"><span class="avatar" style="background:#e37400">AL</span><span>Amy Lau</span></div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <button class="compose-btn" id="composeBtn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#041e49"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+      Compose
+    </button>
+    <button class="folder" data-folder="inbox"><span class="ico">&#128229;</span>Inbox<span class="count" id="cInbox"></span></button>
+    <button class="folder" data-folder="held"><span class="ico">&#9203;</span>Awaiting approval<span class="count" id="cHeld"></span></button>
+    <button class="folder" data-folder="sent"><span class="ico">&#10148;</span>Sent<span class="count" id="cSent"></span></button>
+    <div class="side-note">DLP guard checks every email before it leaves. Recipients are checked against the JARS Finance whitelist (staff, clients, partners, regulators). Unverified recipients or high-risk content need approval from David Chan.</div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<!-- Compose window -->
+<div class="compose" id="compose" hidden>
+  <div class="compose-head" id="composeHead">
+    <span id="composeTitle">New Message</span><span class="spacer"></span>
+    <button id="minCompose" title="Minimise">&#8211;</button>
+    <button id="closeCompose" title="Discard">&times;</button>
+  </div>
+  <div class="compose-main">
+    <div class="compose-scroll">
+      <div class="field" id="toField"><label for="to">To</label><input id="to" autocomplete="off" placeholder="name@jars-finance.com.hk"></div>
+      <div id="recipientWarning" class="recipient-box" hidden></div>
+      <div class="field"><label for="subject">Subject</label><input id="subject" autocomplete="off"></div>
+      <div class="flag-banner" id="flagBanner" hidden>
+        <span id="flagBannerText"></span>
+        <button class="link" id="clearHl">Hide highlights</button>
+      </div>
+      <div class="hl-wrap">
+        <div class="hl-backdrop" id="bodyHl"></div>
+        <textarea id="body" placeholder="Write your message"></textarea>
+      </div>
+      <div class="attach-box" id="attachBox" hidden>
+        <div class="attach-row">
+          <span class="file-ico">FILE</span>
+          <input type="text" id="attachName" aria-label="Attachment name">
+          <button class="link" id="removeAttach">Remove</button>
+        </div>
+        <div class="hl-wrap att">
+          <div class="hl-backdrop" id="attHl"></div>
+          <textarea id="attachment" placeholder="Attachment text" aria-label="Attachment text"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="compose-foot">
+      <button class="send-btn" id="sendBtn">Send</button>
+      <label class="attach-btn" title="Attach a .txt or .csv file">&#128206; Attach file<input type="file" id="fileInput" accept=".txt,.csv,.md,.json" hidden></label>
+      <span class="spacer"></span>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="card" id="card"></div></div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* =====================================================================
+   CONFIG
+   Every email is checked by the Groq AI AND the built-in local rules;
+   the results are merged, so the AI can't "miss" an HKID or account number.
+   If the API fails, the local rules (plus the tested mock JSON for the
+   sample email) still run.
+   NOTE: the key is visible to anyone who opens this file. Rotate it after the demo.
+   ===================================================================== */
+const GROQ_API_KEY = "PASTE_YOUR_GROQ_API_KEY_HERE";   // paste your own key locally; never commit a real key
+
+const CONFIG = {
+  USE_LIVE_API: true,
+  GROQ_ENDPOINT: "https://api.groq.com/openai/v1/chat/completions",
+  GROQ_MODEL: "llama-3.3-70b-versatile",
+  EMPLOYEE: "Amy Lau",
+  EMPLOYEE_EMAIL: "amy.lau@jars-finance.com.hk",
+  MANAGER: "David Chan",
+  MANAGER_EMAIL: "david.chan@jars-finance.com.hk",
+  STORAGE_KEY: "pendingApproval",
+  RESULT_KEY: "approvalResult",
+  BOX_KEY: "dlp_employee_mailbox"     // this device's own Sent / Awaiting approval / Inbox history
+};
+
+/* Shared storage between employee.html and manager.html: localStorage (same browser). */
+/* Stats for the manager's Weekly Report.
+   Logged: event type, flag categories, counts and the sender's name. Never email addresses or email text.
+   Opened through server.py -> saved to dlp_stats.json. Opened as a plain file -> kept in this browser instead. */
+const STATS = {
+  remote: location.protocol.startsWith("http"),
+  LOCAL_KEY: "dlp_stats_local",
+  async log(evt) {
+    const e = { ...evt, sender: CONFIG.EMPLOYEE, ts: new Date().toISOString() };   // sender name is shown in the manager's Weekly Report
+    if (this.remote) {
+      try { const r = await fetch("/api/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(e) }); if (r.ok) return; }
+      catch (err) { console.warn("stats server unreachable, keeping event locally", err); }
+    }
+    try { const all = JSON.parse(localStorage.getItem(this.LOCAL_KEY) || "[]"); all.push(e); localStorage.setItem(this.LOCAL_KEY, JSON.stringify(all.slice(-2000))); } catch (err) {}
+  }
+};
+// Turn flags into anonymous team-level patterns, e.g. "External recipient + Internal cost / pricing", "HKID number in attachment".
+function normCategory(c) {
+  c = String(c || "");
+  if (/hkid|identity|personal identifiers/i.test(c)) return "HKID number";
+  if (/bank|account no/i.test(c)) return "Bank account";
+  if (/card/i.test(c)) return "Card number";
+  if (/customer list|client list|client row/i.test(c)) return "Customer list";
+  if (/pric|cost|margin|discount|quote/i.test(c)) return "Internal cost / pricing";
+  if (/confidential|secret/i.test(c)) return "Confidential info";
+  if (/credential|password/i.test(c)) return "Credentials";
+  if (/phone|contact/i.test(c)) return "Phone number";
+  if (/recipient|domain/i.test(c)) return "External recipient";
+  return c.split(" + ")[0].slice(0, 40) || "Other";
+}
+function patternsOf(flags) {
+  const content = [], seen = new Set();
+  for (const f of flags || []) {
+    if (f.source === "recipient") continue;
+    for (const part of String(f.category || "").split(" + ")) {
+      const cat = normCategory(part);
+      const label = f.source === "attachment" ? `${cat} in attachment` : cat;
+      if (!seen.has(label)) { seen.add(label); content.push({ label, cat, high: f.severity === "high" }); }
+    }
+  }
+  const out = content.map(c => c.label);
+  if ((flags || []).some(f => f.source === "recipient")) {
+    const top = content.find(c => c.high) || content[0];
+    out.unshift(top ? `External recipient + ${top.cat}` : "External recipient (no sensitive content)");
+  }
+  return out.slice(0, 10);
+}
+
+const STORE = {
+  key(name) { return name === "pending" ? CONFIG.STORAGE_KEY : CONFIG.RESULT_KEY; },
+  async get(name) { try { return JSON.parse(localStorage.getItem(this.key(name)) || "null"); } catch (e) { return null; } },
+  async set(name, value) { localStorage.setItem(this.key(name), JSON.stringify(value)); },
+  async remove(name) { localStorage.removeItem(this.key(name)); }
+};
+
+/* =====================================================================
+   Recipient whitelist (hardcoded, no backend)
+   ===================================================================== */
+const RECIPIENT_CONFIG = {
+  "company_domain": "@jars-finance.com.hk",
+  "whitelist": {
+    "internal": [
+      "alex.wong@jars-finance.com.hk",
+      "sarah.lee@jars-finance.com.hk",
+      "compliance@jars-finance.com.hk",
+      "@jars-finance.com.hk"
+    ],
+    "clients": [
+      "david.chen@megacorp-holdings.hk",
+      "emily.yeung@private-wealth.com",
+      "@trusted-family-office.hk"
+    ],
+    "partners": [
+      "audit-team@kpmg.com.hk",
+      "legal@hk-law-associates.com",
+      "@salesforce.com"
+    ],
+    "governmental": [
+      "taxinfo@ird.gov.hk",
+      "compliance@sfc.hk",
+      "enquiry@pcpd.org.hk"
+    ]
+  }
+};
+
+/**
+ * Check every address in the To: field against the whitelist.
+ * Returns [{ email, status: "Safe" | "Unverified", category: "internal" | "clients" | "partners" | "governmental" | "external" }]
+ */
+function checkRecipients(toFieldValue) {
+  const addresses = String(toFieldValue || "")
+    .split(/[,;]/)
+    .map(part => { const angle = part.match(/<([^>]+)>/); return (angle ? angle[1] : part).trim().toLowerCase(); })
+    .filter(Boolean);
+
+  return addresses.map(email => {
+    const at = email.lastIndexOf("@");
+    const wellFormed = at > 0 && at === email.indexOf("@") && at < email.length - 1;
+    const domain = wellFormed ? email.slice(at + 1) : null;
+    for (const [category, entries] of Object.entries(RECIPIENT_CONFIG.whitelist)) {
+      for (const raw of entries) {
+        const entry = raw.trim().toLowerCase();
+        if (entry.startsWith("@")) {
+          // wildcard: the whole domain after "@" must match, so "x@fake-trusted-family-office.hk" is NOT safe
+          if (domain !== null && email[email.length - entry.length] === "@" && domain === entry.slice(1)) return { email, status: "Safe", category };
+        } else if (email === entry) {
+          return { email, status: "Safe", category };
+        }
+      }
+    }
+    return { email, status: "Unverified", category: "external" };
+  });
+}
+const unverifiedOf = (to) => checkRecipients(to).filter(r => r.status === "Unverified");
+const allInternal = (to) => { const r = checkRecipients(to); return r.length > 0 && r.every(x => x.category === "internal"); };
+const tidyRecipients = (to) => to.split(/[,;]/).map(a => a.trim()).filter(Boolean).join(", ");
+
+/* Live warning under the To: field */
+function renderRecipientWarning(results) {
+  const box = $("recipientWarning");
+  const bad = results.filter(r => r.status === "Unverified");
+  $("toField").classList.toggle("unverified", bad.length > 0);
+  if (!results.length) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false;
+  box.className = "recipient-box " + (bad.length ? "bad" : "good");
+  box.innerHTML = bad.length
+    ? `<b>⚠️ External / Unverified Domain Detected</b><ul>${bad.map(r => `<li>${esc(r.email)}</li>`).join("")}</ul>`
+    : `✓ All recipients verified: ${results.map(r => `${esc(r.email)} <span class="cat-chip">${r.category}</span>`).join(" ")}`;
+}
+
+const SAMPLE = {
+  to: "kelvin.chan.private@gmail.com",
+  subject: "Client stuff for the weekend",
+  body: `Hi Kelvin,
+
+Sending this to my personal email so I can work on it at home. This is the confidential Q4 pricing for Harbour Logistics - we're offering them 18% below list, don't share.
+
+Mrs Wong's HKID is K123456(7) and her account is 012-345-678901 at the bank, in case you need it for the onboarding form.
+
+Also our internal margin target is 32% this quarter.
+
+Thanks,
+Amy`,
+  attachName: "client_list_Q4.csv",
+  attachment: `name,phone,email,contract_value_hkd
+Wong Mei Ling,+852 9123 4567,meiling.wong@example.hk,1,250,000
+Harbour Logistics Ltd,+852 2345 6789,ops@harbour-logistics.example,3,800,000
+Lee Ka Fai,+852 6789 0123,kafai.lee@example.hk,420,000`
+};
+
+/* The JSON we tested for the sample email (same format the AI returns). */
+const MOCK_RESULT = {
+  "risk_level": "high",
+  "action": "block",
+  "summary": "10 potential data leak(s) found.",
+  "flags": [
+    { "source": "body", "text": "K123456(7)", "category": "HKID number", "severity": "high",
+      "reason": "Hong Kong ID numbers are personal data under the PDPO.",
+      "suggestion": "Remove the HKID; share it only through the secure HR/onboarding system." },
+    { "source": "body", "text": "012-345-678901", "category": "Bank account number", "severity": "high",
+      "reason": "Bank account numbers enable fraud if leaked.",
+      "suggestion": "Delete the account number; refer to the client file instead." },
+    { "source": "body", "text": "confidential Q4 pricing for Harbour Logistics - we're offering them 18% below list, don't share",
+      "category": "Confidential info", "severity": "high",
+      "reason": "Content is explicitly labelled confidential.",
+      "suggestion": "Do not send confidential material outside the company." },
+    { "source": "body", "text": "18% below list", "category": "Pricing / margin", "severity": "medium",
+      "reason": "Discounts and margin targets are commercially sensitive.",
+      "suggestion": "Remove pricing details or share via the approved deal desk." },
+    { "source": "body", "text": "margin target is 32%", "category": "Pricing / margin", "severity": "medium",
+      "reason": "Discounts and margin targets are commercially sensitive.",
+      "suggestion": "Remove pricing details or share via the approved deal desk." },
+    { "source": "attachment", "text": "+852 9123 4567", "category": "Phone number", "severity": "medium",
+      "reason": "Customer phone numbers are personal data.",
+      "suggestion": "Remove contact details or send via the CRM." },
+    { "source": "attachment", "text": "+852 2345 6789", "category": "Phone number", "severity": "medium",
+      "reason": "Customer phone numbers are personal data.",
+      "suggestion": "Remove contact details or send via the CRM." },
+    { "source": "attachment", "text": "+852 6789 0123", "category": "Phone number", "severity": "medium",
+      "reason": "Customer phone numbers are personal data.",
+      "suggestion": "Remove contact details or send via the CRM." },
+    { "source": "attachment", "text": "name,phone,email,contract_value_hkd", "category": "Customer list", "severity": "high",
+      "reason": "Attachment looks like a customer list with contact details.",
+      "suggestion": "Remove the attachment; customer lists must stay in the CRM." },
+    { "source": "recipient", "text": "kelvin.chan.private@gmail.com", "category": "Personal email recipient", "severity": "high",
+      "reason": "Company data is being sent to a personal webmail account.",
+      "suggestion": "Send to a colleague's @jars-finance.com.hk address or use the approved file share." }
+  ]
+};
+
+/* Starter inbox so the mailbox isn't empty (fictional company, readable and replyable). */
+const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
+const SEED_INBOX = [
+  { id: "seed-1", from: "David Chan", fromEmail: "david.chan@jars-finance.com.hk", to: "amy.lau@jars-finance.com.hk", at: ago(1.5),
+    subject: "Reminder: client data stays inside the company",
+    body: `Hi team,\n\nQuick reminder ahead of Q4: customer lists, pricing and anything with HKID or bank details must not be sent to personal email accounts.\n\nIf you really need to send something sensitive outside the company, the DLP guard will route it to me for approval.\n\nThanks,\nDavid` },
+  { id: "seed-2", from: "IT Support", fromEmail: "it@jars-finance.com.hk", to: "all-staff@jars-finance.com.hk", at: ago(26),
+    subject: "DLP guard is now active on all mailboxes",
+    body: `Hello everyone,\n\nFrom today, every outgoing email is checked for confidential data before it is sent. If something is flagged you can remove it, replace it, or ask your manager to approve it.\n\nIT Support` },
+  { id: "seed-3", from: "Emily Yeung", fromEmail: "emily.yeung@private-wealth.com", to: "amy.lau@jars-finance.com.hk", at: ago(50),
+    subject: "Re: Q4 shipment schedule",
+    body: `Hi Amy,\n\nThanks for the update. Could you confirm the delivery window for the November shipment when you have a moment?\n\nBest regards,\nEmily Yeung\nPrivate Wealth` }
+];
+
+const $ = (id) => document.getElementById(id);
+const overlay = $("overlay"), card = $("card");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const SEV = { high: 3, medium: 2, low: 1 };
+const COLORS = ["#1a73e8", "#188038", "#8430ce", "#c5221f", "#e37400", "#00796b"];
+const initials = (n) => String(n || "?").split(/[\s.@]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+const avatar = (n) => `<span class="avatar" style="background:${COLORS[[...String(n)].reduce((a, c) => a + c.charCodeAt(0), 0) % COLORS.length]}">${esc(initials(n))}</span>`;
+function shortTime(iso) {
+  const d = new Date(iso), now = new Date();
+  return d.toDateString() === now.toDateString()
+    ? d.toLocaleTimeString("en-HK", { hour: "numeric", minute: "2-digit" })
+    : d.toLocaleDateString("en-HK", { day: "numeric", month: "short" });
+}
+const longTime = (iso) => new Date(iso).toLocaleString("en-HK", { dateStyle: "medium", timeStyle: "short" });
+
+/* =====================================================================
+   1. Mailbox state (this device)
+   ===================================================================== */
+function loadBox() {
+  try { return Object.assign({ inbox: [], sent: [], held: [], read: {} }, JSON.parse(localStorage.getItem(CONFIG.BOX_KEY) || "{}")); }
+  catch (e) { return { inbox: [], sent: [], held: [], read: {} }; }
+}
+const box = loadBox();
+function saveBox() { try { localStorage.setItem(CONFIG.BOX_KEY, JSON.stringify(box)); } catch (e) {} }
+
+const V = { folder: "inbox", open: null, query: "" };
+
+function folderItems(folder) {
+  let items = folder === "inbox" ? [...box.inbox, ...SEED_INBOX] : folder === "sent" ? box.sent : box.held;
+  items = [...items].sort((a, b) => new Date(b.at) - new Date(a.at));
+  const q = V.query.trim().toLowerCase();
+  if (q) items = items.filter(m => [m.from, m.to, m.subject, m.body].join(" ").toLowerCase().includes(q));
+  return items;
+}
+const isUnread = (m) => m.id && !box.read[m.id] && (m.id.startsWith("seed") || m.kind === "decision");
+
+function render() {
+  $("cInbox").textContent = [...box.inbox, ...SEED_INBOX].filter(isUnread).length || "";
+  const pending = box.held.filter(h => h.status === "pending").length;
+  $("cHeld").textContent = pending || "";
+  $("cSent").textContent = "";
+  document.querySelectorAll(".folder").forEach(b => b.classList.toggle("active", b.dataset.folder === V.folder && !V.query));
+  V.open ? renderMessage() : renderList();
+}
+
+function renderList() {
+  const names = { inbox: "Inbox", sent: "Sent", held: "Awaiting approval" };
+  const items = folderItems(V.folder);
+  const main = $("main");
+  main.innerHTML = `
+    <div class="main-bar">
+      <span class="title">${V.query ? `Search results for “${esc(V.query)}”` : names[V.folder]}</span>
+      <span class="spacer"></span>
+      <span class="meta">${items.length} conversation${items.length === 1 ? "" : "s"}</span>
+    </div>
+    <div class="scroll">${items.length ? items.map(m => rowHtml(m)).join("") :
+      `<div class="empty">${V.query ? "No messages match your search." : V.folder === "held" ? "No emails are waiting for approval." : V.folder === "sent" ? "You haven't sent anything yet." : "Your inbox is empty."}</div>`}</div>`;
+  main.querySelectorAll(".row").forEach(r => r.onclick = () => openMessage(r.dataset.folder, r.dataset.id));
+}
+
+function rowHtml(m) {
+  const folder = m._folder || V.folder;
+  const who = folder === "inbox" ? m.from : `To: ${m.to}`;
+  let tag = "";
+  if (folder === "held") tag = m.status === "pending" ? `<span class="tag tag-pending">Waiting for ${esc(CONFIG.MANAGER)}</span>`
+    : m.status === "returned" ? `<span class="tag tag-back">Returned</span>` : `<span class="tag tag-ok">Approved</span>`;
+  if (folder === "sent" && m.approvedBy) tag = `<span class="tag tag-ok">Approved by ${esc(m.approvedBy)}</span>`;
+  if (m.kind === "decision") tag = m.status === "returned" ? `<span class="tag tag-back">Returned</span>` : `<span class="tag tag-ok">Approved</span>`;
+  const clip = m.attachment ? `<span class="clip">&#128206;</span>` : "";
+  return `<div class="row ${isUnread(m) ? "unread" : ""}" data-id="${esc(m.id)}" data-folder="${folder}">
+    <div class="who">${esc(who)}</div>
+    <div class="what"><b>${esc(m.subject || "(no subject)")}</b> — ${esc((m.body || "").replace(/\s+/g, " ").slice(0, 120))}</div>
+    <div class="when">${tag}${clip}${shortTime(m.at)}</div>
+  </div>`;
+}
+
+function findMessage(folder, id) {
+  const list = folder === "inbox" ? [...box.inbox, ...SEED_INBOX] : folder === "sent" ? box.sent : box.held;
+  return list.find(m => m.id === id);
+}
+function openMessage(folder, id) {
+  V.open = { folder, id };
+  box.read[id] = true; saveBox();
+  render();
+}
+
+function renderMessage() {
+  const { folder, id } = V.open, m = findMessage(folder, id);
+  if (!m) { V.open = null; return render(); }
+  const fromName = folder === "inbox" ? m.from : CONFIG.EMPLOYEE;
+  const fromAddr = folder === "inbox" ? m.fromEmail : CONFIG.EMPLOYEE_EMAIL;
+  let status = "", actions = "";
+  if (folder === "held") {
+    status = m.status === "pending"
+      ? `<div class="status-box pending"><b>Not delivered yet.</b> This email was blocked by the DLP guard and is waiting for ${esc(CONFIG.MANAGER)}'s approval (request ${esc(m.reqId)}).</div>`
+      : m.status === "returned"
+        ? `<div class="status-box back"><b>Returned by ${esc(CONFIG.MANAGER)}.</b> This email was not sent.${m.comment ? ` Comment: “${esc(m.comment)}”` : ""}</div>`
+        : `<div class="status-box ok"><b>Approved by ${esc(CONFIG.MANAGER)}</b> and delivered to ${esc(m.finalTo || m.to)}.</div>`;
+    if (m.status === "returned") actions = `<button class="pill-btn primary" data-act="edit">Edit and resend</button>`;
+  }
+  if (folder === "inbox") {
+    actions = m.kind === "decision" && m.status === "returned"
+      ? `<button class="pill-btn primary" data-act="edit">Open in compose</button><button class="pill-btn" data-act="reply">&#8617; Reply</button>`
+      : `<button class="pill-btn" data-act="reply">&#8617; Reply</button>`;
+  }
+  if (folder === "sent") actions = `<button class="pill-btn" data-act="forward">&#8618; Forward</button>`;
+
+  $("main").innerHTML = `
+    <div class="main-bar">
+      <button class="icon-btn" id="backBtn" title="Back">&#8592; Back</button>
+      <span class="spacer"></span>
+    </div>
+    <div class="scroll"><div class="read">
+      <h1>${esc(m.subject || "(no subject)")} ${m.attachment ? '<span class="tag tag-ext">Attachment</span>' : ""}</h1>
+      ${status}
+      <div class="sender">
+        ${avatar(fromName)}
+        <div><div class="name">${esc(fromName)} <span class="addr">&lt;${esc(fromAddr)}&gt;</span></div>
+          <div class="to">to ${esc(m.to)}</div></div>
+        <div class="time">${longTime(m.at)}</div>
+      </div>
+      <div class="msg-body">${esc(m.body)}</div>
+      ${m.attachment ? `<div class="attach-card"><div class="head"><span class="file-ico">FILE</span>${esc(m.attachName || "attachment")}</div><pre>${esc(m.attachment)}</pre></div>` : ""}
+      <div class="read-actions">${actions}</div>
+    </div></div>`;
+  $("backBtn").onclick = () => { V.open = null; render(); };
+  $("main").querySelectorAll("[data-act]").forEach(b => b.onclick = () => {
+    const act = b.dataset.act;
+    if (act === "reply") openCompose({ to: m.fromEmail, subject: /^re:/i.test(m.subject) ? m.subject : "Re: " + m.subject,
+      body: `\n\n\nOn ${longTime(m.at)}, ${m.from} wrote:\n> ` + m.body.replace(/\n/g, "\n> ") }, "Reply");
+    if (act === "forward") openCompose({ to: "", subject: "Fwd: " + m.subject, body: `\n\n---------- Forwarded message ----------\n${m.body}`,
+      attachName: m.attachName, attachment: m.attachment }, "Forward");
+    if (act === "edit") openCompose(m.original || m, "Edit returned email");
+  });
+}
+
+document.querySelectorAll(".folder").forEach(b => b.onclick = () => {
+  V.folder = b.dataset.folder; V.open = null; V.query = ""; $("search").value = ""; $("clearSearch").hidden = true; render();
+});
+$("search").addEventListener("input", () => {
+  V.query = $("search").value; V.open = null; $("clearSearch").hidden = !V.query; render();
+});
+$("clearSearch").onclick = (e) => { e.preventDefault(); $("search").value = ""; V.query = ""; $("clearSearch").hidden = true; render(); };
+
+/* =====================================================================
+   2. Compose window
+   ===================================================================== */
+let composeFlags = [];
+function setCompose(e) {
+  $("to").value = e.to || ""; $("subject").value = e.subject || ""; $("body").value = e.body || "";
+  $("attachName").value = e.attachName || ""; $("attachment").value = e.attachment || "";
+  $("attachBox").hidden = !(e.attachment || e.attachName);
+  renderRecipientWarning(checkRecipients($("to").value));
+  composeFlags = []; syncHighlights();
+}
+function openCompose(e, title) {
+  $("compose").hidden = false; $("compose").classList.remove("min");
+  $("composeTitle").textContent = title || "New Message";
+  setCompose(e || {});
+  (e && e.to ? $("body") : $("to")).focus();
+  if (e && e.body && /^\n/.test(e.body)) { $("body").setSelectionRange(0, 0); }
+}
+function closeCompose() { $("compose").hidden = true; setCompose({}); }
+function getEmail() {
+  return { to: $("to").value.trim(), subject: $("subject").value, body: $("body").value,
+           attachName: $("attachBox").hidden ? "" : $("attachName").value.trim(),
+           attachment: $("attachBox").hidden ? "" : $("attachment").value };
+}
+
+function syncHighlights() {
+  const e = getEmail();
+  const live = composeFlags.filter(f => f.text && (sourceText(e, f.source) || "").includes(f.text));
+  for (const [ta, hl, src] of [[$("body"), $("bodyHl"), "body"], [$("attachment"), $("attHl"), "attachment"]]) {
+    hl.innerHTML = renderText(ta.value, live.filter(f => f.source === src), "backdrop") + "\n ";
+    hl.style.width = ta.clientWidth + "px";
+    hl.style.height = ta.clientHeight + "px";
+    hl.scrollTop = ta.scrollTop;
+  }
+  $("toField").classList.toggle("flagged", live.some(f => f.source === "recipient"));
+  $("flagBanner").hidden = composeFlags.length === 0;
+  $("flagBannerText").textContent = live.length
+    ? `${live.length} flagged item(s) highlighted. Edit them, then press Send to re-check.`
+    : "All highlighted items edited. Press Send to re-check.";
+}
+["body", "attachment"].forEach(id => {
+  $(id).addEventListener("input", syncHighlights);
+  $(id).addEventListener("scroll", syncHighlights);
+  new ResizeObserver(syncHighlights).observe($(id));
+});
+let recipientTimer = null;
+$("to").addEventListener("input", () => {
+  syncHighlights();
+  clearTimeout(recipientTimer);
+  recipientTimer = setTimeout(() => renderRecipientWarning(checkRecipients($("to").value)), 150);
+});
+$("to").addEventListener("blur", () => renderRecipientWarning(checkRecipients($("to").value)));
+$("clearHl").onclick = () => { composeFlags = []; syncHighlights(); };
+$("removeAttach").onclick = () => { $("attachName").value = ""; $("attachment").value = ""; $("attachBox").hidden = true; syncHighlights(); };
+$("composeBtn").onclick = () => openCompose({});
+$("loadSample").onclick = () => { openCompose(SAMPLE); toast("Sample risky email loaded", "Press Send to run the DLP check."); };
+$("minCompose").onclick = (e) => { e.stopPropagation(); $("compose").classList.toggle("min"); };
+$("composeHead").onclick = () => { if ($("compose").classList.contains("min")) $("compose").classList.remove("min"); };
+$("closeCompose").onclick = (e) => { e.stopPropagation(); closeCompose(); };
+$("fileInput").onchange = (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  $("attachName").value = file.name; $("attachBox").hidden = false;
+  const reader = new FileReader();
+  reader.onload = () => { $("attachment").value = String(reader.result).slice(0, 20000); syncHighlights(); };
+  reader.readAsText(file);
+  e.target.value = "";
+};
+
+/* =====================================================================
+   3. DLP check — Groq AI + local rules, merged
+   ===================================================================== */
+const SYSTEM_PROMPT = `You are a data loss prevention (DLP) checker for a small Hong Kong business.
+The company is JARS Finance (@jars-finance.com.hk). Recipients are checked against a separate whitelist, so focus on the CONTENT.
+You are given the email BODY and the full ATTACHMENT text. Scan BOTH. Attachment flags must use "source": "attachment" and quote text exactly as it appears in the attachment.
+Inspect the outgoing email body and attachment text for: personal data (HKID numbers, phone numbers, personal addresses, bank/credit card numbers), customer lists, pricing/discounts/margins, contracts, internal-only or confidential business info, and credentials.
+Check EVERY row of attachments: list each HKID number, bank account number and phone number as its own flag.
+Do not add recipient flags; the recipient whitelist is checked separately.
+Respond with ONLY a JSON object, no prose, matching this schema:
+{
+  "risk_level": "high" | "medium" | "low" | "none",
+  "action": "block" | "warn" | "allow",
+  "summary": "one sentence",
+  "flags": [
+    {
+      "source": "body" | "attachment" | "recipient",
+      "text": "EXACT substring copied verbatim from the source so it can be highlighted",
+      "category": "short label, e.g. HKID number",
+      "severity": "high" | "medium" | "low",
+      "reason": "why this is risky",
+      "suggestion": "what the sender should do instead"
+    }
+  ]
+}
+Keep each "text" as short as possible while covering the sensitive item, and do not return overlapping flags. If nothing is risky, return an empty flags array.`;
+
+async function analyzeWithGroq(email) {
+  const att = (email.attachment || "").slice(0, 12000);
+  // The attachment text is included in the prompt so the AI scans it too.
+  const userMsg = `TO: ${email.to}\nSUBJECT: ${email.subject}\n\nBODY:\n<<<\n${email.body}\n>>>\n\nATTACHMENT "${email.attachName || "none"}":\n<<<\n${att || "(no attachment)"}\n>>>`;
+  const res = await fetch(CONFIG.GROQ_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
+    body: JSON.stringify({
+      model: CONFIG.GROQ_MODEL, temperature: 0, max_tokens: 3000,
+      response_format: { type: "json_object" },
+      messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: userMsg }]
+    })
+  });
+  if (!res.ok) throw new Error(`Groq API ${res.status}: ${await res.text()}`);
+  const t = (await res.json()).choices[0].message.content;
+  return JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1));
+}
+
+// Tested mock JSON — only for the sample email, and only if the API is unavailable.
+function mockAnalysis(email) {
+  if (email.subject !== SAMPLE.subject) return null;
+  const flags = MOCK_RESULT.flags.filter(f => f.source !== "recipient" && (sourceText(email, f.source) || "").includes(f.text));
+  return flags.length ? { ...MOCK_RESULT, flags } : null;
+}
+
+// Local rules: always run, as a safety net under the AI.
+const TOKEN_RULES = [
+  { re: /\b[A-Z]{1,2}\d{6}\s?\(?[0-9A]\)?/g, category: "HKID number", severity: "high",
+    reason: "Hong Kong ID numbers are personal data under the PDPO.", suggestion: "Remove the HKID; share it only through the secure HR/onboarding system." },
+  { re: /\b\d{3}-\d{3}-\d{5,9}(?:-\d{1,3})?\b/g, category: "Bank account number", severity: "high",
+    reason: "Bank account numbers enable fraud if leaked.", suggestion: "Delete the account number; refer to the client file instead." },
+  { re: /\b(?:\d{4}[ -]){3}\d{4}\b/g, category: "Card number", severity: "high",
+    reason: "Payment card numbers must never be emailed.", suggestion: "Remove the card number." },
+  { re: /(?:\+852[ -]?)?\b[2-9]\d{3}[ -]?\d{4}\b/g, category: "Phone number", severity: "medium",
+    reason: "Customer phone numbers are personal data.", suggestion: "Remove contact details or send via the CRM." },
+  { re: /\b(?:password|passwd|pwd)\s*[:=]\s*\S+/gi, category: "Credential", severity: "high",
+    reason: "Passwords must never be sent by email.", suggestion: "Remove the password and share it through the password manager." }
+];
+// Sentence-level rules: flag (and later remove) the whole sentence so the email still reads properly.
+const MONEY = /(?:HK\$|HKD|US\$|USD|RMB|CNY|\$)\s?\d|\d(?:[\d,]*)(?:\.\d+)?\s?(?:HKD|USD|RMB|dollars?)\b|\b\d{1,3}(?:\.\d+)?\s?%/i;
+const PRICING_WORDS = /\b(cost|costs|price|prices|pricing|quot(?:e|es|ed|ing)|paid|pays?|margins?|discounts?|rebates?|commission|salary|salaries|budget|revenue|profit|target|below list)\b/i;
+const SECRECY = /\b(just between us|between you and me|don'?t mention|do not mention|don'?t tell|do not tell|keep (?:this|it) (?:quiet|secret|between us)|off the record|confidential|internal only|internal use only|do not share|don'?t share|do not forward|don'?t forward)\b/i;
+const SENTENCE_RULES = [
+  { test: (t) => SECRECY.test(t), category: "Confidential info", severity: "high",
+    reason: "This sentence is marked as secret or confidential.", suggestion: "Remove it — confidential information must not leave the company." },
+  { test: (t) => MONEY.test(t) && PRICING_WORDS.test(t), category: "Pricing / cost information", severity: "high",
+    reason: "Internal costs, quotes, competitor prices and margins are commercially sensitive.", suggestion: "Remove the pricing details or share them through the approved deal desk." },
+  { test: (t) => TOKEN_RULES.slice(0, 3).some(r => new RegExp(r.re.source, r.re.flags).test(t)), category: "Personal identifiers", severity: "high",
+    reason: "This sentence contains a customer's ID or bank details.", suggestion: "Remove the sentence; send identity details only through the secure onboarding system." }
+];
+// Split into sentences: a sentence ends at . ! ? followed by a space or line end (so "0.29" stays whole),
+// and common abbreviations like "Mrs." or "Ltd." don't end a sentence.
+function sentencesOf(text) {
+  const out = [];
+  for (const line of text.split("\n")) {
+    const parts = line.match(/[^.!?]*(?:[.!?](?!\s|$)[^.!?]*)*(?:[.!?]+|$)/g) || [];
+    let buf = "";
+    for (const part of parts) {
+      buf += part;
+      if (/\b(?:Mr|Mrs|Ms|Dr|St|Ltd|Co|Inc|No|vs|e\.g|i\.e|etc)\.\s*$/i.test(buf)) continue;
+      if (buf.trim().length > 3) out.push(buf.trim());
+      buf = "";
+    }
+    if (buf.trim().length > 3) out.push(buf.trim());
+  }
+  return out;
+}
+
+function isTable(text) {
+  return (text || "").split("\n").filter(l => /[,\t;|]|\S {2,}\S/.test(l)).length >= 2;
+}
+
+function analyzeLocally(email) {
+  const flags = [], seen = new Set();
+  const add = (source, text, r) => { const k = source + "|" + text; if (seen.has(k)) return; seen.add(k);
+    flags.push({ source, text, category: r.category, severity: r.severity, reason: r.reason, suggestion: r.suggestion }); };
+
+  for (const [source, text] of [["body", email.body], ["attachment", email.attachment]]) {
+    if (!text) continue;
+    if (!(source === "attachment" && isTable(text))) {
+      for (const sen of sentencesOf(text)) {
+        const hit = SENTENCE_RULES.filter(r => r.test(sen));
+        if (hit.length) add(source, sen, { category: hit.map(h => h.category).join(" + "), severity: "high",
+          reason: hit.map(h => h.reason).join(" "), suggestion: hit[0].suggestion });
+      }
+    }
+    for (const r of TOKEN_RULES) for (const m of text.matchAll(r.re)) add(source, m[0], r);
+  }
+
+  // Table-style attachments (comma, tab, semicolon or space separated): judge the whole file.
+  if (email.attachment && isTable(email.attachment)) {
+    const lines = email.attachment.split("\n").filter(l => l.trim());
+    const header = lines[0];
+    const personalCols = /(name|client|customer|contact)/i.test(header) && /(phone|e-?mail|hkid|id no|address|bank|account)/i.test(header);
+    const pricingCols = /(cost|price|margin|discount|salary|revenue|contract.?value|amount)/i.test(header);
+    const idRows = lines.filter(l => TOKEN_RULES.slice(0, 3).some(r => new RegExp(r.re.source, r.re.flags).test(l))).length;
+    const emailRows = lines.filter(l => /[\w.+-]+@[\w-]+\.[\w.]+/.test(l)).length;
+    const personal = personalCols || idRows >= 2 || emailRows >= 2;
+    if (personal || pricingCols) {
+      flags.push({ source: "attachment", text: header, wholeAttachment: true,
+        category: [personal && "Customer list", pricingCols && "Pricing / cost data"].filter(Boolean).join(" + "), severity: "high",
+        reason: `This file is a table of ${[personal && "customer personal data", pricingCols && "internal pricing / cost / margin figures"].filter(Boolean).join(" and ")}.`,
+        suggestion: "Remove the whole attachment; this data must stay in the company systems." });
+    }
+  }
+  return { risk_level: flags.some(f => f.severity === "high") ? "high" : flags.length ? "medium" : "none",
+           summary: flags.length ? `${flags.length} potential data leak(s) found.` : "No sensitive data detected.", flags };
+}
+
+function recipientFlags(to) {
+  return unverifiedOf(to).map(r => {
+    const personal = /gmail|yahoo|outlook|hotmail|icloud|qq\.com|163\.com|126\.com|proton/i.test(r.email);
+    // highlight the address exactly as typed in the To: field
+    const typed = (to.split(/[,;]/).map(a => { const m = a.match(/<([^>]+)>/); return (m ? m[1] : a).trim(); }).find(a => a.toLowerCase() === r.email)) || r.email;
+    return { source: "recipient", text: typed, category: "External / Unverified Domain", severity: "high",
+      reason: `${r.email} is not on the JARS Finance whitelist (internal, clients, partners or governmental).${personal ? " It looks like a personal webmail account." : ""}`,
+      suggestion: `Remove it, change it to a whitelisted address, or ask ${CONFIG.MANAGER} to approve it.` };
+  });
+}
+
+// Merge AI flags + local-rule flags into one result in the same JSON format.
+function mergeResults(email, ai, local, checkedBy) {
+  const seen = new Set(), flags = [];
+  for (const f of [...(ai?.flags || []), ...local.flags]) {
+    if (!f || f.source === "recipient" || !f.text) continue;
+    const k = f.source + "|" + f.text;
+    const dup = flags.find(x => x.source + "|" + x.text === k);
+    if (dup) { if (f.wholeAttachment) dup.wholeAttachment = true; continue; }
+    seen.add(k); flags.push({ ...f });
+  }
+  flags.unshift(...recipientFlags(email.to));
+  const high = flags.some(f => f.severity === "high");
+  return {
+    risk_level: flags.length ? (high ? "high" : "medium") : "none",
+    action: flags.length ? (high ? "block" : "warn") : "allow",
+    summary: ai?.summary && flags.length ? ai.summary : flags.length ? `${flags.length} potential data leak(s) found.` : "No sensitive data detected.",
+    checked_by: checkedBy,
+    flags
+  };
+}
+
+async function runCheck(email) {
+  let ai = null, checkedBy = "local rules";
+  if (CONFIG.USE_LIVE_API && !GROQ_API_KEY.startsWith("PASTE_")) {
+    try { ai = await analyzeWithGroq(email); checkedBy = "Groq AI + local rules"; }
+    catch (err) { console.warn(err); toast("AI check unavailable — using local rules", String(err.message).slice(0, 160)); }
+  }
+  if (!ai) {
+    await new Promise(r => setTimeout(r, 500));
+    ai = mockAnalysis(email);
+    if (ai) checkedBy = "mock JSON + local rules";
+  }
+  return mergeResults(email, ai, analyzeLocally(email), checkedBy);
+}
+
+/* =====================================================================
+   4. Flag helpers
+   ===================================================================== */
+function sourceText(email, src) { return src === "recipient" ? email.to : src === "body" ? email.body : email.attachment; }
+
+// Find the flagged text in the email even if the AI changed spacing/tabs/case slightly.
+function locate(text, needle) {
+  if (!text || !needle) return null;
+  if (text.includes(needle)) return needle;
+  const parts = needle.trim().split(/\s+/).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (!parts.length || !parts[0]) return null;
+  const m = text.match(new RegExp(parts.join("[\\s,;|]+"), "i"));
+  return m ? m[0] : null;
+}
+function normalizeFlags(email, flags) {
+  // fix up AI flag text (and source, if the AI put an attachment item under "body")
+  flags = flags.map(f => {
+    if (!f || !f.text || f.source === "recipient") return f;
+    for (const src of [f.source, f.source === "body" ? "attachment" : "body"]) {
+      const hit = locate(sourceText(email, src), f.text);
+      if (hit) return { ...f, source: src, text: hit };
+    }
+    return f;
+  });
+  const out = [];
+  for (const src of ["recipient", "body", "attachment"]) {
+    const text = sourceText(email, src) || "";
+    const found = flags.filter(f => f.source === src && f.text && text.includes(f.text))
+      .map(f => ({ f, s: text.indexOf(f.text), e: text.indexOf(f.text) + f.text.length }))
+      .sort((a, b) => a.s - b.s || b.e - a.e);
+    const groups = [];
+    for (const x of found) {
+      const g = groups[groups.length - 1];
+      if (g && x.s < g.e) { g.e = Math.max(g.e, x.e); g.parts.push(x.f); }
+      else groups.push({ s: x.s, e: x.e, parts: [x.f] });
+    }
+    for (const g of groups) {
+      const uniq = (k) => [...new Set(g.parts.map(p => p[k]).filter(Boolean))];
+      out.push({ source: src, text: text.slice(g.s, g.e), category: uniq("category").join(" + "), wholeAttachment: g.parts.some(p => p.wholeAttachment),
+        severity: g.parts.map(p => p.severity || "medium").sort((a, b) => SEV[b] - SEV[a])[0],
+        reason: uniq("reason").join(" "), suggestion: uniq("suggestion").join(" ") });
+    }
+  }
+  return out.map((f, i) => ({ ...f, _n: i + 1, state: "pending", replacement: "" }));
+}
+
+function occurrences(text, flags) {
+  const r = [];
+  flags.forEach(f => {
+    if (!f.text) return;
+    let i = text.indexOf(f.text);
+    while (i !== -1) { r.push({ s: i, e: i + f.text.length, f }); i = text.indexOf(f.text, i + f.text.length); }
+  });
+  r.sort((a, b) => a.s - b.s || b.e - a.e);
+  const out = []; let end = -1;
+  for (const x of r) if (x.s >= end) { out.push(x); end = x.e; }
+  return out;
+}
+
+function renderText(text, flags, mode) {
+  text = text || "";
+  let out = "", pos = 0;
+  for (const { s, e, f } of occurrences(text, flags)) {
+    const seg = text.slice(s, e), before = text.slice(pos, s);
+    if (mode === "final") out += before + (f.state === "removed" ? "" : f.state === "replaced" ? f.replacement : seg);
+    else if (mode === "backdrop") out += esc(before) + `<mark>${esc(seg)}</mark>`;
+    else {
+      const n = `<sup>${f._n}</sup>`;
+      out += esc(before);
+      if (f.state === "removed") out += `<del>${esc(seg)}</del>${n}`;
+      else if (f.state === "replaced") out += `<del>${esc(seg)}</del><ins>${esc(f.replacement)}</ins>${n}`;
+      else out += `<mark class="${f.state === "kept" ? "kept" : ""}">${esc(seg)}${n}</mark>`;
+    }
+    pos = e;
+  }
+  return mode === "final" ? out + text.slice(pos) : out + esc(text.slice(pos));
+}
+
+const tidy = (t) => t.replace(/[ \t]+([.,;:!?])/g, "$1").replace(/[ \t]{2,}/g, " ").replace(/^[ \t]+|[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
+const tidyLines = (t) => t.split("\n").filter(l => l.replace(/,/g, "").trim()).join("\n");
+
+let R = null;   // current review
+function plan() {
+  const e = R.email, f = R.flags;
+  const to = tidyRecipients(renderText(e.to, f.filter(x => x.source === "recipient"), "final"));
+  const body = tidy(renderText(e.body, f.filter(x => x.source === "body"), "final"));
+  const attachment = R.attachmentRemoved ? "" : tidyLines(renderText(e.attachment, f.filter(x => x.source === "attachment"), "final"));
+  const remaining = f.filter(x => x.source !== "recipient" && !["removed", "replaced"].includes(x.state) && !(x.source === "attachment" && R.attachmentRemoved));
+  return { final: { to, subject: e.subject, body, attachName: attachment ? e.attachName : "", attachment },
+           remaining, unverified: unverifiedOf(to), noRecipients: !to,
+           needsApproval: unverifiedOf(to).length > 0 || (remaining.some(x => x.severity === "high") && !allInternal(to)) };
+}
+
+/* =====================================================================
+   5. Send → check → warning card
+   ===================================================================== */
+$("sendBtn").onclick = async () => {
+  const email = getEmail();
+  if (!email.to) { $("to").focus(); toast("Please specify at least one recipient", ""); return; }
+  // Step 1: recipient whitelist
+  const recipients = checkRecipients(email.to);
+  renderRecipientWarning(recipients);
+  if (!recipients.length) { $("to").focus(); toast("Please enter a valid recipient", ""); return; }
+  // Step 2: AI content analysis (+ local rules)
+  $("sendBtn").disabled = true;
+  showScanning();
+  const result = await runCheck(email);
+  $("sendBtn").disabled = false;
+  const flags = normalizeFlags(email, result.flags || []);
+  // Step 3: warn if any unverified recipient OR any high-risk flag; otherwise send
+  const unverified = recipients.filter(r => r.status === "Unverified");
+  const highRisk = flags.filter(f => f.source !== "recipient" && f.severity === "high");
+  STATS.log({ type: "scanned", flagged: unverified.length > 0 || highRisk.length > 0, highRisk: highRisk.length > 0,
+              unverified: unverified.length, patterns: patternsOf(flags) });
+  if (!unverified.length && !highRisk.length) return deliver(email, 0, flags.filter(f => f.source !== "recipient").length);
+  R = { email, flags, attachmentRemoved: false, raw: result };
+  showWarning();
+};
+
+function showScanning() {
+  overlay.classList.add("show");
+  card.innerHTML = `<div class="card-head head-scan"><div class="spinner"></div>
+    <div><h2>Checking for sensitive data…</h2><p>Scanning body, attachment and recipient</p></div></div>`;
+}
+
+function showWarning() {
+  const e = R.email;
+  const risk = (R.raw.risk_level || "medium").toLowerCase();
+  const has = (src) => R.flags.some(f => f.source === src);
+  card.innerHTML = `
+    <div class="card-head head-warn">
+      <div class="badge-icon" style="background:#f9ab00">!</div>
+      <div><h2>${R.flags.every(f => f.source === "recipient") ? "⚠️ External / Unverified Domain Detected" : "Hold on — this email may leak confidential data"}</h2>
+      <p>${esc(R.raw.summary || "")} · checked by ${esc(R.raw.checked_by || "local rules")} &nbsp;<span class="risk-pill risk-${esc(risk)}">${esc(risk.toUpperCase())} RISK</span></p></div>
+    </div>
+    <div class="card-body">
+      ${has("recipient") ? `<div class="section-title">Recipient</div><div class="preview" id="pvRec"></div>` : ""}
+      <div class="section-title">Email body</div>
+      <div class="preview" id="pvBody"></div>
+      ${e.attachment ? `<div class="section-title"><span>Attachment · ${esc(e.attachName)}</span><button class="mini" id="toggleAtt"></button></div>
+        <div class="preview mono" id="pvAtt"></div>` : ""}
+      <div class="section-title">Reasons &amp; suggestions — choose an action for each</div>
+      <ul class="reasons" id="flagList">
+        ${R.flags.map((f, i) => `
+          <li data-i="${i}" class="${f.severity === "high" ? "high" : ""}">
+            <div class="r-top"><span class="num">${f._n}</span><span class="cat">${esc(f.category || "Sensitive data")}</span>
+              <span class="src">${esc(f.source)}</span><span class="risk-pill risk-${esc(f.severity)}">${esc(f.severity)}</span>
+              <span class="state-tag"></span></div>
+            <div class="reason">${esc(f.reason)}</div>
+            <div class="sugg">${esc(f.suggestion)}</div>
+            <div class="f-actions">
+              ${f.source === "recipient"
+                ? `<button class="mini" data-act="remove">Remove recipient</button><button class="mini" data-act="replace">Change…</button><button class="mini" data-act="keep">Keep</button>`
+                : f.wholeAttachment
+                ? `<button class="mini" data-act="dropatt">Remove whole attachment</button><button class="mini" data-act="keep">Keep</button>`
+                : `<button class="mini" data-act="remove">Remove</button><button class="mini" data-act="replace">Replace…</button><button class="mini" data-act="keep">Keep</button>`}
+            </div>
+            <div class="f-edit" hidden>
+              <input placeholder="${f.source === "recipient" ? "name@jars-finance.com.hk" : "Replacement text, e.g. [see CRM]"}">
+              <button class="mini on" data-act="save">Save</button><button class="mini" data-act="canceledit">Cancel</button>
+            </div>
+          </li>`).join("")}
+      </ul>
+      <details><summary>View raw JSON flags</summary><pre class="json">${esc(JSON.stringify(R.raw, null, 2))}</pre></details>
+    </div>
+    <div class="card-foot">
+      <div class="plan-line" id="planLine"></div>
+      <div class="card-actions">
+        <button class="btn btn-ghost" id="cancelBtn">Cancel / edit myself</button>
+        <button class="btn btn-red" id="anywayBtn">Send anyway</button>
+        <button class="btn btn-primary" id="mineBtn">Send with my changes</button>
+        <button class="btn btn-green" id="applyBtn" title="Removes the flagged content and puts the corrected draft back in the compose window. Nothing is sent.">Apply all suggestions</button>
+      </div>
+    </div>`;
+
+  $("flagList").onclick = (ev) => {
+    const btn = ev.target.closest("button[data-act]"); if (!btn) return;
+    const li = btn.closest("li"), f = R.flags[+li.dataset.i], edit = li.querySelector(".f-edit"), input = edit.querySelector("input");
+    const act = btn.dataset.act;
+    if (act === "remove") { f.state = "removed"; edit.hidden = true; }
+    if (act === "dropatt") { R.attachmentRemoved = true; edit.hidden = true; }
+    if (act === "keep") { f.state = "kept"; edit.hidden = true; }
+    if (act === "replace") { edit.hidden = false; input.value = f.replacement || (f.source === "recipient" ? "" : "[removed]"); input.focus(); input.select(); return; }
+    if (act === "canceledit") { edit.hidden = true; return; }
+    if (act === "save") {
+      const v = input.value.trim();
+      if (f.source === "recipient" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { input.style.borderColor = "#c5221f"; return; }
+      f.state = "replaced"; f.replacement = v; edit.hidden = true;
+    }
+    updateWarning();
+  };
+  $("flagList").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && ev.target.tagName === "INPUT") ev.target.closest(".f-edit").querySelector("[data-act=save]").click();
+  });
+  if ($("toggleAtt")) $("toggleAtt").onclick = () => { R.attachmentRemoved = !R.attachmentRemoved; updateWarning(); };
+  $("cancelBtn").onclick = () => { composeFlags = R.flags.map(f => ({ ...f })); closeOverlay(); $("compose").classList.remove("min"); syncHighlights(); };
+  // "Send anyway": nothing is sent — the original email + AI flags JSON go to the manager via localStorage
+  $("anywayBtn").onclick = () => sendForApproval(R.email, R.raw, R.flags.map(f => ({ ...f, state: "kept" })), "Sent anyway (ignored warning)");
+  $("mineBtn").onclick = finishReview;
+  // "Apply all suggestions": clean the draft, close the card, and let the user review + press Send again.
+  $("applyBtn").onclick = () => {
+    R.flags.forEach(f => { if (f.source !== "recipient" && f.state !== "replaced") f.state = "removed"; });
+    if (R.flags.some(f => f.wholeAttachment)) R.attachmentRemoved = true;
+    const draft = plan().final;              // body/attachment cleaned; recipients only change if the user changed them
+    const removed = R.flags.filter(f => f.state === "removed" && f.source !== "recipient").length;
+    closeOverlay();
+    $("compose").hidden = false; $("compose").classList.remove("min");
+    setCompose(draft);
+    if (!draft.attachment) $("attachBox").hidden = true;
+    $("body").focus(); $("body").setSelectionRange(0, 0); $("body").scrollTop = 0;
+    toast("Suggestions applied — not sent yet",
+      `${removed} item(s) removed${R.attachmentRemoved ? " and the attachment was dropped" : ""}. Review the draft, then press Send to check it again.`);
+    R = null;
+  };
+  updateWarning();
+}
+
+function updateWarning() {
+  const e = R.email, by = (src) => R.flags.filter(f => f.source === src);
+  if ($("pvRec")) $("pvRec").innerHTML = renderText(e.to, by("recipient"), "preview");
+  $("pvBody").innerHTML = renderText(e.body, by("body"), "preview");
+  if ($("pvAtt")) {
+    $("pvAtt").innerHTML = R.attachmentRemoved ? `<del>${esc(e.attachment)}</del>` : renderText(e.attachment, by("attachment"), "preview");
+    $("toggleAtt").textContent = R.attachmentRemoved ? "Keep attachment" : "Remove whole attachment";
+    $("toggleAtt").classList.toggle("on", R.attachmentRemoved);
+  }
+  document.querySelectorAll("#flagList li").forEach(li => {
+    const f = R.flags[+li.dataset.i], viaAtt = f.source === "attachment" && R.attachmentRemoved;
+    li.querySelector(".state-tag").textContent = viaAtt ? "Removed with attachment"
+      : f.state === "removed" ? "Will be removed" : f.state === "replaced" ? `Replace with “${f.replacement}”`
+      : f.state === "kept" ? "Keep — needs approval" : "Not reviewed";
+    li.classList.toggle("resolved", viaAtt || ["removed", "replaced"].includes(f.state));
+    li.querySelectorAll(".f-actions button").forEach(b => {
+      b.disabled = viaAtt;
+      b.classList.toggle("on", !viaAtt && ((b.dataset.act === "remove" && f.state === "removed") || (b.dataset.act === "keep" && f.state === "kept") || (b.dataset.act === "replace" && f.state === "replaced")));
+    });
+  });
+  const p = plan(), line = $("planLine");
+  if (p.needsApproval) {
+    line.className = "plan-line warn";
+    line.textContent = p.unverified.length
+      ? `⚠ Unverified recipient(s): ${p.unverified.map(r => r.email).join(", ")} → sending needs approval from ${CONFIG.MANAGER}${p.remaining.length ? ` (${p.remaining.length} flagged item(s) also remain)` : ""}.`
+      : `⚠ ${p.remaining.filter(x => x.severity === "high").length} high-risk item(s) would still leave the company → needs approval from ${CONFIG.MANAGER}.`;
+    $("mineBtn").textContent = "Send with my changes (needs approval)";
+  } else {
+    line.className = "plan-line ok";
+    line.textContent = p.noRecipients ? "⚠ No recipients left — add one before sending."
+      : p.remaining.length ? (allInternal(p.final.to) ? "✓ All recipients are internal — flagged items can stay within the company." : "✓ Recipients are whitelisted and no high-risk items remain.")
+      : "✓ No sensitive content left — “Send with my changes” will deliver normally.";
+    $("mineBtn").textContent = "Send with my changes";
+  }
+}
+
+function finishReview() {
+  const p = plan();
+  if (p.noRecipients) { toast("No recipients left", "Add or change a recipient before sending."); return; }
+  if (p.needsApproval) {
+    return sendForApproval(p.final, R.raw, [...recipientFlags(p.final.to), ...p.remaining].map(f => ({ ...f, state: "kept" })),
+      p.unverified.length ? "Unverified recipient" : "Sent with partial changes");
+  }
+  // Safety net: re-scan the final version before it leaves (catches anything missed or typed into a replacement).
+  if (!allInternal(p.final.to)) {
+    const again = mergeResults(p.final, null, analyzeLocally(p.final), "local rules (re-check)");
+    if (again.flags.some(f => f.source !== "recipient" && f.severity === "high")) {
+      toast("Still contains sensitive data", "The edited email was checked again and was not sent.");
+      R = { email: p.final, flags: normalizeFlags(p.final, again.flags), attachmentRemoved: false, raw: again };
+      return showWarning();
+    }
+  }
+  const removed = R.flags.filter(f => ["removed", "replaced"].includes(f.state)).length + (R.attachmentRemoved ? 1 : 0);
+  deliver(p.final, removed);
+}
+
+/* =====================================================================
+   6. Outcomes
+   ===================================================================== */
+function deliver(email, removed, lowNotes) {
+  STATS.log({ type: "sent" });
+  box.sent.push({ id: "s-" + Date.now(), ...email, at: new Date().toISOString(), cleaned: removed });
+  saveBox();
+  closeCompose();
+  overlay.classList.add("show");
+  card.innerHTML = `
+    <div class="card-head head-ok"><div class="badge-icon" style="background:#188038">&#10003;</div>
+      <div><h2>Sent</h2><p>${removed ? `${removed} sensitive item(s) removed or replaced before sending.` : lowNotes ? `All recipients verified · no high-risk content (${lowNotes} low/medium note(s)).` : "All recipients verified · no sensitive data detected."}</p></div></div>
+    <div class="card-body">
+      <div class="kv"><div>To</div><div>${esc(email.to)}</div><div>Subject</div><div>${esc(email.subject)}</div>
+        <div>Attachment</div><div>${email.attachment ? esc(email.attachName) : "None"}</div></div>
+      <div class="section-title">Message as sent</div>
+      <div class="preview">${esc(email.body)}</div>
+    </div>
+    <div class="card-actions"><button class="btn btn-ghost" id="viewSentBtn">View in Sent</button><button class="btn btn-primary" id="doneBtn">Done</button></div>`;
+  $("doneBtn").onclick = () => { closeOverlay(); render(); };
+  $("viewSentBtn").onclick = () => { closeOverlay(); V.folder = "sent"; V.open = null; render(); };
+}
+
+async function sendForApproval(email, rawJson, flags, reason) {
+  STATS.log({ type: "blocked", patterns: patternsOf(flags) });
+  const payload = {
+    id: "DLP-" + Math.random().toString(36).slice(2, 7).toUpperCase(),
+    submittedAt: new Date().toISOString(),
+    employee: CONFIG.EMPLOYEE, employeeEmail: CONFIG.EMPLOYEE_EMAIL, manager: CONFIG.MANAGER, reason,
+    email: { to: email.to, subject: email.subject, body: email.body, attachName: email.attachName, attachment: email.attachment },
+    ai: rawJson,
+    flags: flags.map(({ state, replacement, ...f }) => f)
+  };
+  let saved = true;
+  try { await STORE.set("pending", payload); await STORE.remove("result"); }
+  catch (err) { saved = false; console.error(err); }
+
+  if (saved) {
+    box.held.push({ id: "h-" + payload.id, reqId: payload.id, ...payload.email, at: payload.submittedAt, status: "pending" });
+    saveBox();
+  }
+  closeCompose();
+  render();
+  overlay.classList.add("show");
+  card.innerHTML = saved ? `
+    <div class="card-head head-block"><div class="badge-icon" style="background:#c5221f">&#8856;</div>
+      <div><h2>Email not sent</h2><p>Request ${payload.id}</p></div></div>
+    <div class="card-body">
+      <p class="blocked-msg">⚠️ Email Blocked. Sent to ${esc(CONFIG.MANAGER)} for approval.</p>
+      <p style="margin:0 0 14px;color:#5f6368">Your email to <b>${esc(email.to)}</b> is on hold in <b>Awaiting approval</b>. It will only be delivered if ${esc(CONFIG.MANAGER)} approves it, and his reply will arrive in your Inbox.</p>
+      <div class="kv"><div>Subject</div><div>${esc(email.subject)}</div><div>Flagged items</div><div>${payload.flags.length}</div></div>
+    </div>
+    <div class="card-actions"><button class="btn btn-ghost" id="viewHeldBtn">View in Awaiting approval</button><button class="btn btn-primary" id="doneBtn">OK</button></div>` : `
+    <div class="card-head head-block"><div class="badge-icon" style="background:#c5221f">!</div>
+      <div><h2>Could not save the approval request</h2><p>Your email was not sent and not submitted.</p></div></div>
+    <div class="card-body">This browser is blocking localStorage (for example in a private window). Open the page in a normal window and try again.</div>
+    <div class="card-actions"><button class="btn btn-primary" id="doneBtn">OK</button></div>`;
+  $("doneBtn").onclick = () => { closeOverlay(); render(); };
+  if ($("viewHeldBtn")) $("viewHeldBtn").onclick = () => { closeOverlay(); V.folder = "held"; V.open = null; render(); };
+}
+
+/* Manager's decision → update "Awaiting approval" and deliver a reply email to the Inbox */
+async function checkDecision() {
+  let r = null;
+  try { r = await STORE.get("result"); } catch (e) { return; }
+  if (!r || box.inbox.some(m => m.decisionId === r.id + r.decidedAt)) return;
+
+  const held = box.held.find(h => h.reqId === r.id);
+  if (held) { held.status = r.status === "returned" ? "returned" : "approved"; held.comment = r.comment; held.finalTo = r.email.to; }
+  const returned = r.status === "returned";
+  const verb = returned ? "Returned" : r.status === "edited" ? "Edited and sent" : "Approved";
+  box.inbox.push({
+    id: "d-" + r.id + "-" + Date.now(), decisionId: r.id + r.decidedAt, kind: "decision", status: returned ? "returned" : "approved",
+    from: r.manager, fromEmail: CONFIG.MANAGER_EMAIL, to: CONFIG.EMPLOYEE_EMAIL, at: r.decidedAt,
+    subject: `${verb}: ${r.email.subject || "(no subject)"}`,
+    body: returned
+      ? `Hi Amy,\n\nI've returned your email to ${r.email.to} — it was not sent.\n\n${r.comment ? `Comment: ${r.comment}\n\n` : ""}Please fix it and send it again. Use "Open in compose" below to edit it.\n\nDavid\n\n(Request ${r.id})`
+      : `Hi Amy,\n\n${r.status === "edited" ? "I edited your email before sending it" : "I approved your email as written"} — it has been delivered to ${r.email.to}.\n\n${r.comment ? `Comment: ${r.comment}\n\n` : ""}David\n\n(Request ${r.id})`,
+    original: returned ? r.email : null
+  });
+  if (!returned) box.sent.push({ id: "s-" + r.id, ...r.email, at: r.decidedAt, approvedBy: r.manager });
+  saveBox();
+  try { await STORE.remove("result"); } catch (e) {}
+  toast(`New message from ${r.manager}`, `${verb}: ${r.email.subject || ""}`);
+  render();
+}
+window.addEventListener("storage", (e) => { if (e.key === CONFIG.RESULT_KEY) checkDecision(); });
+setInterval(checkDecision, 3000);
+
+function toast(title, text) {
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.innerHTML = `<b>${esc(title)}</b>${esc(text)}`;
+  $("toasts").appendChild(t);
+  setTimeout(() => t.remove(), 5000);
+}
+function closeOverlay() { overlay.classList.remove("show"); card.innerHTML = ""; }
+
+render();
+checkDecision();
+</script>
+</body>
+</html>

@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DLP Approvals — David Chan</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; font-size: 14px; background: #f4f5f7; color: #202124; }
+  button, input, textarea { font-family: inherit; }
+
+  .topbar { background: #1f2937; color: #fff; padding: 12px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .topbar .logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg,#8430ce,#1a73e8); }
+  .topbar h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  .topbar .spacer { flex: 1; }
+  .user { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d1d5db; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: #8430ce; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar h2 { margin: 0; font-size: 20px; }
+  .toolbar .spacer { flex: 1; }
+  .checked { font-size: 12px; color: #6b7280; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+  .stat { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; }
+  .stat .lbl { font-size: 12px; color: #6b7280; }
+  .stat .val { font-size: 24px; font-weight: 700; margin-top: 2px; }
+
+  .panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+  .panel-head { padding: 14px 18px; border-bottom: 1px solid #e5e7eb; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: #fafafa; }
+  .panel-head .title { font-weight: 700; font-size: 15px; }
+  .panel-head .meta { font-size: 12px; color: #6b7280; width: 100%; }
+  .panel-body { padding: 18px; }
+  .empty { padding: 56px 20px; text-align: center; color: #6b7280; }
+  .empty .big { font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+
+  .grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+  .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6b7280; margin: 16px 0 6px; }
+  .section-title:first-child { margin-top: 0; }
+  .kv { display: grid; grid-template-columns: 80px 1fr; gap: 6px 10px; font-size: 13px; align-items: center; }
+  .kv > div:nth-child(odd) { color: #6b7280; }
+  .preview { border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow: auto; background: #fafafa; line-height: 1.55; }
+  .preview.mono { font-family: Consolas, Menlo, monospace; font-size: 12px; tab-size: 14; }
+  mark { background: #fff176; padding: 1px 2px; border-radius: 2px; box-shadow: inset 0 -2px 0 #f9ab00; }
+  sup { font-size: 9px; color: #b06000; font-weight: 700; margin-left: 1px; }
+
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+  .risk-high { background: #fce8e6; color: #c5221f; }
+  .risk-medium { background: #fef7e0; color: #b06000; }
+  .risk-low { background: #e6f4ea; color: #188038; }
+  .pending { background: #fef7e0; color: #b06000; }
+  .ext { background: #fce8e6; color: #c5221f; }
+  .okd { background: #e6f4ea; color: #188038; }
+
+  .reasons { list-style: none; padding: 0; margin: 0; }
+  .reasons li { border: 1px solid #e5e7eb; border-left: 4px solid #f9ab00; border-radius: 6px; padding: 9px 11px; margin-bottom: 8px; font-size: 13px; }
+  .reasons li.high { border-left-color: #c5221f; }
+  .reasons .top { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+  .reasons .num { background: #f9ab00; color: #fff; border-radius: 50%; width: 19px; height: 19px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .reasons .cat { font-weight: 700; }
+  .reasons .src { font-size: 11px; color: #6b7280; background: #f3f4f6; padding: 1px 6px; border-radius: 8px; }
+  .reasons .sugg { color: #188038; margin-top: 3px; }
+  .reasons .sugg::before { content: "Suggestion: "; font-weight: 700; }
+  .reasons .ok { color: #188038; font-size: 12px; font-weight: 600; }
+
+  details { margin-top: 12px; }
+  summary { cursor: pointer; color: #1a73e8; font-size: 13px; }
+  pre.json { background: #263238; color: #c3e88d; padding: 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; max-height: 260px; }
+
+  .actions { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 18px; border-top: 1px solid #e5e7eb; background: #fafafa; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 8px; padding: 9px 18px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-primary { background: #1a73e8; color: #fff; }
+  .btn-green { background: #188038; color: #fff; }
+  .btn-amber { background: #fff; color: #b06000; border: 1px solid #f9ab00; }
+  .btn-ghost { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+  .btn-ghost:hover { background: #f3f4f6; }
+
+  .edit-field { width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 10px; font-size: 14px; }
+  textarea.edit-field { resize: vertical; line-height: 1.5; }
+  textarea.mono { font-family: Consolas, Menlo, monospace; font-size: 12px; }
+  .edit-note { font-size: 12px; color: #b06000; margin-top: 6px; }
+  .edit-note.clear { color: #188038; }
+
+  .confirm { text-align: center; padding: 44px 20px; }
+  .confirm .icon { width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 28px; font-weight: 700; }
+  .confirm h3 { margin: 0 0 6px; font-size: 20px; }
+  .confirm p { margin: 0; color: #6b7280; }
+
+  .log { margin-top: 20px; }
+  .log ul { list-style: none; margin: 0; padding: 0; }
+  .log li { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 9px 12px; margin-bottom: 6px; font-size: 13px; display: flex; justify-content: space-between; gap: 10px; }
+  .log li span:last-child { color: #6b7280; white-space: nowrap; }
+
+  /* tabs */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid #e5e7eb; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab { border: none; background: none; padding: 10px 16px; font-size: 14px; font-weight: 600; color: #6b7280; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+  .tab:hover { color: #111827; }
+  .tab.active { color: #1a73e8; border-bottom-color: #1a73e8; }
+  .tab .count { background: #fef7e0; color: #b06000; border-radius: 10px; padding: 0 7px; font-size: 11px; margin-left: 4px; }
+  .list-panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+  .list-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f1f3f4; font-size: 13px; }
+  .list-row:last-child { border-bottom: none; }
+  .list-row .when { color: #6b7280; white-space: nowrap; }
+  /* weekly report */
+  .report-head { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .report-head h2 { margin: 0; font-size: 20px; }
+  .report-head p { margin: 4px 0 0; color: #6b7280; font-size: 13px; }
+  .report-head .spacer { flex: 1; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; }
+  .kpi .lbl { font-size: 12px; color: #6b7280; }
+  .kpi .val { font-size: 28px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .kpi .sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .report-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px 18px; }
+  .card h3 { margin: 0 0 10px; font-size: 15px; }
+  .rank { list-style: none; margin: 0; padding: 0; }
+  .rank li { display: flex; gap: 12px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid #f1f3f4; }
+  .rank li:last-child { border-bottom: none; }
+  .rank .pos { width: 24px; height: 24px; border-radius: 50%; background: #e8f0fe; color: #1a73e8; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; }
+  .rank .name { flex: 1; font-weight: 600; }
+  .rank .num { color: #6b7280; font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .coach { background: #f3e8fd; border-color: #e9d5ff; }
+  .coach .topic { font-size: 16px; font-weight: 700; color: #5b21b6; margin: 4px 0 8px; }
+  .coach ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+  .people { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .people th { text-align: left; font-size: 12px; color: #6b7280; font-weight: 600; padding: 8px 10px 8px 0; border-bottom: 2px solid #1f2937; white-space: nowrap; }
+  .people td { padding: 10px 10px 10px 0; border-bottom: 1px solid #f1f3f4; vertical-align: top; }
+  .people td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .people .who { font-weight: 700; white-space: nowrap; }
+  .people .who .avatar { width: 26px; height: 26px; font-size: 11px; margin-right: 8px; vertical-align: middle; }
+  .bar-mini { display: inline-block; height: 6px; border-radius: 3px; background: #c5221f; vertical-align: middle; margin-left: 6px; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 10px; margin: 0 4px 3px 0; white-space: nowrap; }
+  .t-red { background: #fce8e6; color: #c5221f; } .t-amber { background: #fef7e0; color: #b06000; }
+  .t-green { background: #e6f4ea; color: #188038; } .t-blue { background: #e8f0fe; color: #1a73e8; } .t-grey { background: #f3f4f6; color: #6b7280; }
+  .tablewrap { overflow-x: auto; }
+  .privacy { font-size: 12px; color: #6b7280; margin-top: 14px; line-height: 1.5; }
+  .muted-btn { border: none; background: none; color: #6b7280; font-size: 12px; text-decoration: underline; cursor: pointer; padding: 0; }
+  @media (max-width: 780px) { .kpis { grid-template-columns: 1fr 1fr; } .report-grid { grid-template-columns: 1fr; } }
+
+  @media (max-width: 780px) { .grid { grid-template-columns: 1fr; } .stat .val { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"></div>
+  <h1>DLP Approval Dashboard</h1>
+  <span class="spacer"></span>
+  <div class="user"><span class="avatar">DC</span><span>David Chan · Manager</span></div>
+</div>
+
+<div class="wrap">
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="inbox">Inbox <span class="count" id="tInbox" hidden></span></button>
+    <button class="tab" data-tab="approved">Approved</button>
+    <button class="tab" data-tab="returned">Returned</button>
+    <button class="tab" data-tab="report">Weekly Report</button>
+  </nav>
+
+  <section id="view-inbox">
+  <div class="toolbar">
+    <h2>Pending approvals</h2>
+    <span class="spacer"></span>
+    <span class="checked" id="checked"></span>
+    <button class="btn btn-ghost" id="refreshBtn">&#8635; Refresh</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="lbl">Pending</div><div class="val" id="sPending">0</div></div>
+    <div class="stat"><div class="lbl">Approved / sent</div><div class="val" id="sApproved">0</div></div>
+    <div class="stat"><div class="lbl">Returned to employee</div><div class="val" id="sReturned">0</div></div>
+  </div>
+
+  <div class="panel" id="panel"></div>
+  </section>
+
+  <section id="view-approved" hidden><div class="list-panel" id="approvedList"></div></section>
+  <section id="view-returned" hidden><div class="list-panel" id="returnedList"></div></section>
+  <section id="view-report" hidden><div id="report"></div></section>
+</div>
+
+<script>
+/* Manager dashboard — reads localStorage only. No AI calls. */
+const CONFIG = {
+  STORAGE_KEY: "pendingApproval",        // written by employee.html on "Send anyway"
+  RESULT_KEY: "approvalResult",          // read by employee.html to show the decision in Amy's inbox
+  LOG_KEY: "dlp_manager_log",
+  MANAGER: "David Chan",
+  POLL_MS: 2000
+};
+
+/* Same whitelist as employee.html (hardcoded, no backend) */
+const RECIPIENT_CONFIG = {
+  "company_domain": "@jars-finance.com.hk",
+  "whitelist": {
+    "internal": ["alex.wong@jars-finance.com.hk", "sarah.lee@jars-finance.com.hk", "compliance@jars-finance.com.hk", "@jars-finance.com.hk"],
+    "clients": ["david.chen@megacorp-holdings.hk", "emily.yeung@private-wealth.com", "@trusted-family-office.hk"],
+    "partners": ["audit-team@kpmg.com.hk", "legal@hk-law-associates.com", "@salesforce.com"],
+    "governmental": ["taxinfo@ird.gov.hk", "compliance@sfc.hk", "enquiry@pcpd.org.hk"]
+  }
+};
+function checkRecipients(toFieldValue) {
+  const addresses = String(toFieldValue || "").split(/[,;]/)
+    .map(part => { const angle = part.match(/<([^>]+)>/); return (angle ? angle[1] : part).trim().toLowerCase(); }).filter(Boolean);
+  return addresses.map(email => {
+    const at = email.lastIndexOf("@");
+    const wellFormed = at > 0 && at === email.indexOf("@") && at < email.length - 1;
+    const domain = wellFormed ? email.slice(at + 1) : null;
+    for (const [category, entries] of Object.entries(RECIPIENT_CONFIG.whitelist)) {
+      for (const raw of entries) {
+        const entry = raw.trim().toLowerCase();
+        if (entry.startsWith("@")) { if (domain !== null && email[email.length - entry.length] === "@" && domain === entry.slice(1)) return { email, status: "Safe", category }; }
+        else if (email === entry) return { email, status: "Safe", category };
+      }
+    }
+    return { email, status: "Unverified", category: "external" };
+  });
+}
+
+/* ---------- Team stats (anonymous) ----------
+   Through server.py -> dlp_stats.json (persists across restarts). As a plain file -> this browser only. */
+const REMOTE = location.protocol.startsWith("http");
+const LOCAL_STATS_KEY = "dlp_stats_local";
+const STATS = {
+  async log(evt) {
+    const e = { ...evt, ts: evt.ts || new Date().toISOString() };
+    return this.logMany([e]);
+  },
+  async logMany(events) {
+    if (REMOTE) {
+      try { const r = await fetch("/api/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(events) }); if (r.ok) return; }
+      catch (err) { console.warn("stats server unreachable, keeping events locally", err); }
+    }
+    try { const all = JSON.parse(localStorage.getItem(LOCAL_STATS_KEY) || "[]"); all.push(...events); localStorage.setItem(LOCAL_STATS_KEY, JSON.stringify(all.slice(-5000))); } catch (err) {}
+  },
+  async load() {
+    let events = [], source = "this browser only (open through server.py to save to dlp_stats.json)";
+    if (REMOTE) {
+      try { const r = await fetch("dlp_stats.json?t=" + Date.now(), { cache: "no-store" });
+            if (r.ok) { events = (await r.json()).events || []; source = "dlp_stats.json on server.py"; } }
+      catch (err) { source = "server unreachable — showing this browser's data only"; }
+    }
+    try { events = events.concat(JSON.parse(localStorage.getItem(LOCAL_STATS_KEY) || "[]")); } catch (err) {}
+    return { events, source };
+  },
+  async reset() {
+    if (REMOTE) { try { await fetch("/api/stats/reset", { method: "POST" }); } catch (err) {} }
+    try { localStorage.removeItem(LOCAL_STATS_KEY); } catch (err) {}
+  }
+};
+function normCategory(c) {
+  c = String(c || "");
+  if (/hkid|identity|personal identifiers/i.test(c)) return "HKID number";
+  if (/bank|account no/i.test(c)) return "Bank account";
+  if (/card/i.test(c)) return "Card number";
+  if (/customer list|client list|client row/i.test(c)) return "Customer list";
+  if (/pric|cost|margin|discount|quote/i.test(c)) return "Internal cost / pricing";
+  if (/confidential|secret/i.test(c)) return "Confidential info";
+  if (/credential|password/i.test(c)) return "Credentials";
+  if (/phone|contact/i.test(c)) return "Phone number";
+  if (/recipient|domain/i.test(c)) return "External recipient";
+  return c.split(" + ")[0].slice(0, 40) || "Other";
+}
+function patternsOf(flags) {
+  const content = [], seen = new Set();
+  for (const f of flags || []) {
+    if (f.source === "recipient") continue;
+    for (const part of String(f.category || "").split(" + ")) {
+      const cat = normCategory(part), label = f.source === "attachment" ? `${cat} in attachment` : cat;
+      if (!seen.has(label)) { seen.add(label); content.push({ label, cat, high: f.severity === "high" }); }
+    }
+  }
+  const out = content.map(c => c.label);
+  if ((flags || []).some(f => f.source === "recipient")) {
+    const top = content.find(c => c.high) || content[0];
+    out.unshift(top ? `External recipient + ${top.cat}` : "External recipient (no sensitive content)");
+  }
+  return out.slice(0, 10);
+}
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (iso) => new Date(iso).toLocaleString("en-HK", { dateStyle: "medium", timeStyle: "short" });
+
+
+let current = null;     // the pending request
+let mode = "view";      // "view" | "edit" | "return"
+let showingConfirm = false;
+
+/* ---------- localStorage ---------- */
+function loadPending() {
+  try { return JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || "null"); } catch (e) { return null; }
+}
+function loadLog() {
+  try { return JSON.parse(localStorage.getItem(CONFIG.LOG_KEY) || "[]"); } catch (e) { return []; }
+}
+function saveLog(log) { try { localStorage.setItem(CONFIG.LOG_KEY, JSON.stringify(log.slice(0, 200))); } catch (e) {} }
+
+/* ---------- highlighting ---------- */
+function highlight(text, flags) {
+  text = text || "";
+  const r = [];
+  flags.forEach(f => {
+    if (!f.text) return;
+    let i = text.indexOf(f.text);
+    while (i !== -1) { r.push({ s: i, e: i + f.text.length, n: f._n }); i = text.indexOf(f.text, i + f.text.length); }
+  });
+  r.sort((a, b) => a.s - b.s || b.e - a.e);
+  let out = "", pos = 0;
+  for (const x of r) {
+    if (x.s < pos) continue;
+    out += esc(text.slice(pos, x.s)) + `<mark>${esc(text.slice(x.s, x.e))}<sup>${x.n}</sup></mark>`;
+    pos = x.e;
+  }
+  return out + esc(text.slice(pos));
+}
+const flagsAll = () => (current.flags || current.ai?.flags || []).map((f, i) => ({ ...f, _n: f._n || i + 1 }));
+const flagsFor = (src) => flagsAll().filter(f => f.source === src);
+
+/* ---------- render ---------- */
+function renderStats() {
+  const log = loadLog();
+  $("sPending").textContent = current ? 1 : 0;
+  $("sApproved").textContent = log.filter(l => l.status !== "returned").length;
+  $("sReturned").textContent = log.filter(l => l.status === "returned").length;
+  $("tInbox").hidden = !current; $("tInbox").textContent = current ? "1" : "";
+  const list = (items, empty) => items.length
+    ? items.map(l => `<div class="list-row"><span>${esc(l.text)}</span><span class="when">${fmt(l.at)}</span></div>`).join("")
+    : `<div class="empty">${empty}</div>`;
+  $("approvedList").innerHTML = list(log.filter(l => l.status !== "returned"), "No approved emails yet.");
+  $("returnedList").innerHTML = list(log.filter(l => l.status === "returned"), "No returned emails yet.");
+}
+
+function refresh() {
+  showingConfirm = false;
+  current = loadPending();
+  mode = "view";
+  $("checked").textContent = "Last checked " + new Date().toLocaleTimeString("en-HK");
+  renderStats();
+  render();
+}
+
+function render() {
+  const panel = $("panel");
+  if (!current) {
+    panel.innerHTML = `<div class="empty"><div class="big">No pending approvals.</div>Blocked emails from employees appear here. Press Refresh to check again.</div>`;
+    return;
+  }
+  const e = current.email, risk = (current.ai?.risk_level || "high").toLowerCase();
+  panel.innerHTML = `
+    <div class="panel-head">
+      <span class="title">${esc(current.id || "Request")} · ${esc(e.subject || "(no subject)")}</span>
+      <span class="pill pending">Pending</span>
+      <span class="pill risk-${esc(risk)}">${esc(risk.toUpperCase())} RISK</span>
+      <span class="meta">From ${esc(current.employee || "Employee")} (${esc(current.employeeEmail || "")}) · ${current.submittedAt ? fmt(current.submittedAt) : ""}${current.reason ? " · " + esc(current.reason) : ""}${current.ai?.checked_by ? " · checked by " + esc(current.ai.checked_by) : ""}</span>
+    </div>
+    <div class="panel-body">
+      <div class="grid">
+        <div id="emailCol"></div>
+        <div>
+          <div class="section-title">Why it was flagged</div>
+          ${current.ai?.summary ? `<p style="margin:0 0 10px;font-size:13px">${esc(current.ai.summary)}</p>` : ""}
+          <ul class="reasons" id="reasons"></ul>
+          <details><summary>View raw AI flags JSON</summary><pre class="json">${esc(JSON.stringify(current.ai, null, 2))}</pre></details>
+        </div>
+      </div>
+    </div>
+    <div class="actions" id="actions"></div>`;
+  renderEmailCol(); renderReasons(); renderActions();
+}
+
+function renderEmailCol() {
+  const e = current.email, col = $("emailCol");
+  if (mode === "edit") {
+    col.innerHTML = `
+      <div class="section-title">Edit email before sending</div>
+      <div class="kv">
+        <div>To</div><div><input class="edit-field" id="eTo" value="${esc(e.to)}"></div>
+        <div>Subject</div><div><input class="edit-field" id="eSubject" value="${esc(e.subject)}"></div>
+      </div>
+      <div class="section-title">Body</div>
+      <textarea class="edit-field" id="eBody" rows="11">${esc(e.body)}</textarea>
+      <div class="section-title">Attachment ${e.attachName ? "· " + esc(e.attachName) : ""}</div>
+      <textarea class="edit-field mono" id="eAtt" rows="6" placeholder="(no attachment)">${esc(e.attachment)}</textarea>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" id="stripBtn" style="padding:6px 14px;font-size:13px">Remove all flagged text</button>
+        <button class="btn btn-ghost" id="dropAttBtn" style="padding:6px 14px;font-size:13px">Remove attachment</button>
+      </div>
+      <div class="edit-note" id="editNote"></div>`;
+    ["eTo", "eBody", "eAtt"].forEach(id => $(id).addEventListener("input", () => { renderReasons(); updateEditNote(); }));
+    $("stripBtn").onclick = () => {
+      let b = $("eBody").value, a = $("eAtt").value;
+      flagsFor("body").forEach(f => { b = b.split(f.text).join(""); });
+      flagsFor("attachment").forEach(f => { a = a.split(f.text).join(""); });
+      $("eBody").value = b.replace(/[ \t]+([.,;:!?])/g, "$1").replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n");
+      $("eAtt").value = a.split("\n").filter(l => l.replace(/[,\t;|]/g, "").trim()).join("\n");
+      renderReasons(); updateEditNote();
+    };
+    $("dropAttBtn").onclick = () => { $("eAtt").value = ""; renderReasons(); updateEditNote(); };
+    updateEditNote();
+    return;
+  }
+  const rc = checkRecipients(e.to);
+  col.innerHTML = `
+    <div class="section-title">Email</div>
+    <div class="kv">
+      <div>From</div><div>${esc(current.employeeEmail || "")}</div>
+      <div>To</div><div>${flagsFor("recipient").length ? highlight(e.to, flagsFor("recipient")) : esc(e.to)}
+        <div style="margin-top:4px">${rc.map(r => `<span class="pill ${r.status === "Safe" ? "okd" : "ext"}" style="margin:2px 4px 0 0">${esc(r.email)} · ${r.status === "Safe" ? r.category : "Unverified"}</span>`).join("")}</div></div>
+      <div>Subject</div><div>${esc(e.subject)}</div>
+    </div>
+    <div class="section-title">Body</div>
+    <div class="preview">${highlight(e.body, flagsFor("body"))}</div>
+    <div class="section-title">Attachment ${e.attachName ? "· " + esc(e.attachName) : ""}</div>
+    ${e.attachment ? `<div class="preview mono">${highlight(e.attachment, flagsFor("attachment"))}</div>`
+                   : `<div class="preview" style="color:#6b7280">No attachment</div>`}
+    ${mode === "return" ? `<div class="section-title">Message to ${esc(current.employee || "employee")}</div>
+      <textarea class="edit-field" id="returnComment" rows="3" placeholder="e.g. Please remove the HKIDs and send the client list via the CRM."></textarea>` : ""}`;
+}
+
+function stillPresent(f) {
+  if (mode !== "edit") return true;
+  const src = f.source === "recipient" ? $("eTo").value : f.source === "body" ? $("eBody").value : $("eAtt").value;
+  if (f.source === "recipient") return checkRecipients(src).some(r => r.status === "Unverified" && r.email === f.text.toLowerCase());
+  return src.includes(f.text);
+}
+function renderReasons() {
+  $("reasons").innerHTML = flagsAll().map(f => `
+    <li class="${f.severity === "high" ? "high" : ""}" style="${stillPresent(f) ? "" : "opacity:.55;border-left-color:#188038"}">
+      <div class="top"><span class="num">${f._n}</span><span class="cat">${esc(f.category)}</span>
+        <span class="src">${esc(f.source)}</span><span class="pill risk-${esc(f.severity)}">${esc(f.severity)}</span>
+        ${stillPresent(f) ? "" : `<span class="ok">✓ fixed</span>`}</div>
+      <div>${esc(f.reason)}</div>
+      ${f.suggestion ? `<div class="sugg">${esc(f.suggestion)}</div>` : ""}
+    </li>`).join("");
+}
+function updateEditNote() {
+  const left = flagsAll().filter(stillPresent).length, n = $("editNote");
+  n.className = "edit-note" + (left ? "" : " clear");
+  n.textContent = left ? `${left} flagged item(s) still in the email.` : "✓ All flagged items fixed.";
+}
+
+function renderActions() {
+  const a = $("actions");
+  if (mode === "edit") {
+    a.innerHTML = `<button class="btn btn-ghost" id="cancelBtn">Cancel edit</button><button class="btn btn-primary" id="sendEditedBtn">Send edited email</button>`;
+    $("cancelBtn").onclick = () => { mode = "view"; render(); };
+    $("sendEditedBtn").onclick = () => {
+      const edited = { to: $("eTo").value.trim(), subject: $("eSubject").value, body: $("eBody").value,
+                       attachName: $("eAtt").value.trim() ? current.email.attachName : "", attachment: $("eAtt").value };
+      decide("edited", edited, "", "Edited Email Sent", `Your edited version was sent to ${edited.to}.`, "#1a73e8", "&#9998;");
+    };
+    return;
+  }
+  if (mode === "return") {
+    a.innerHTML = `<button class="btn btn-ghost" id="cancelBtn">Cancel</button><button class="btn btn-amber" id="confirmReturnBtn">Return to ${esc(current.employee || "employee")}</button>`;
+    $("cancelBtn").onclick = () => { mode = "view"; render(); };
+    $("confirmReturnBtn").onclick = () => decide("returned", current.email, $("returnComment").value.trim(),
+      `Returned to ${current.employee || "employee"}`, "The email was not sent. They can fix it and send it again.", "#e37400", "&#8617;");
+    return;
+  }
+  a.innerHTML = `
+    <button class="btn btn-amber" id="returnBtn">Return to Employee</button>
+    <button class="btn btn-primary" id="editBtn">Edit and Send</button>
+    <button class="btn btn-green" id="approveBtn">Approve as is</button>`;
+  $("editBtn").onclick = () => { mode = "edit"; render(); };
+  $("returnBtn").onclick = () => { mode = "return"; render(); $("returnComment").focus(); };
+  $("approveBtn").onclick = () => decide("approved", current.email, "", "Email Approved and Sent",
+    `Delivered to ${current.email.to} exactly as written.`, "#188038", "&#10003;");
+}
+
+function decide(status, finalEmail, comment, title, sub, color, icon) {
+  const result = { id: current.id, status, manager: CONFIG.MANAGER, comment: comment || "",
+                   email: finalEmail, decidedAt: new Date().toISOString() };
+  try {
+    localStorage.removeItem(CONFIG.STORAGE_KEY);                      // clear the pending request
+    localStorage.setItem(CONFIG.RESULT_KEY, JSON.stringify(result));  // tell employee.html
+  } catch (e) { alert("Could not update localStorage: " + e.message); return; }
+  STATS.log({ type: status, sender: current.employee || "Unknown", patterns: patternsOf(flagsAll()) });   // approved | edited | returned
+  const log = loadLog();
+  log.unshift({ status, at: result.decidedAt, text: `${current.id || ""} · ${title} — ${current.email.subject || ""}${comment ? ` (“${comment}”)` : ""}` });
+  saveLog(log);
+  current = null; mode = "view"; showingConfirm = true;
+  renderStats();
+  $("panel").innerHTML = `
+    <div class="confirm">
+      <div class="icon" style="background:${color}">${icon}</div>
+      <h3>${esc(title)}</h3>
+      <p>${esc(sub)}</p>
+      <p style="margin-top:16px"><button class="btn btn-ghost" id="nextBtn">&#8635; Check for more</button></p>
+    </div>`;
+  $("nextBtn").onclick = refresh;
+}
+
+/* ---------- tabs ---------- */
+let activeTab = "inbox";
+function showTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  ["inbox", "approved", "returned", "report"].forEach(t => { $("view-" + t).hidden = t !== tab; });
+  if (tab === "report") renderReport();
+}
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+/* ---------- Weekly Report (team-level coaching tool) ---------- */
+const TRAINING = [
+  { test: /^External recipient \+/, topic: "Before you hit Send: recipients and sensitive content",
+    points: ["Check every recipient against the approved list before attaching files.", "Company data never goes to personal email — use the approved file share to work from home.", "If unsure, send it to yourself internally or ask Compliance."] },
+  { test: /HKID|Bank account|Card number/, topic: "PDPO refresher: customers' ID and bank details",
+    points: ["HKID and bank numbers belong in the secure onboarding system, not in email.", "Check attachments (exports, spreadsheets) for ID columns before sending.", "Share a reference number instead of the actual ID."] },
+  { test: /Customer list/, topic: "Client data stays in the CRM",
+    points: ["Share a CRM link or a filtered view instead of exporting the client list.", "Remove contact columns you don't need before sharing a file."] },
+  { test: /Internal cost|pricing/i, topic: "Commercially sensitive information: costs, margins and competitor prices",
+    points: ["Quote the client price only — never internal cost or margin.", "Never mention what another client paid.", "Use the deal desk for discount approvals."] },
+  { test: /Confidential/, topic: "Spotting and labelling confidential information",
+    points: ["If a sentence says 'just between us' or 'confidential', it shouldn't leave the company.", "Label confidential documents and keep them on internal channels."] },
+  { test: /Phone number/, topic: "Sharing customer contact details safely",
+    points: ["Only share contact details with people who need them, through the CRM."] },
+  { test: /Credentials/, topic: "Password hygiene", points: ["Never email passwords — use the password manager."] },
+  { test: /External recipient/, topic: "Using approved recipients and channels",
+    points: ["New external contacts must be added to the whitelist by Compliance before you email them."] }
+];
+const trainingFor = (label) => TRAINING.find(t => t.test.test(label || "")) || null;
+const pct = (a, b) => b ? Math.round((a / b) * 100) : 0;
+
+async function renderReport() {
+  const box = $("report");
+  box.innerHTML = `<div class="empty">Loading team statistics…</div>`;
+  const { events, source } = await STATS.load();
+  const now = new Date(), since = new Date(now.getTime() - 7 * 864e5);
+  const week = events.filter(e => new Date(e.ts) >= since);
+  const scanned = week.filter(e => e.type === "scanned");
+  const flagged = scanned.filter(e => e.flagged);
+  const blocked = week.filter(e => e.type === "blocked").length;
+  const approved = week.filter(e => e.type === "approved").length;
+  const edited = week.filter(e => e.type === "edited").length;
+  const returned = week.filter(e => e.type === "returned").length;
+  const reviews = approved + edited + returned;
+
+  const counts = {};
+  flagged.forEach(e => new Set(e.patterns || []).forEach(p => { counts[p] = (counts[p] || 0) + 1; }));
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const coachTopics = [];
+  for (const [label] of top) { const t = trainingFor(label); if (t && !coachTopics.includes(t)) coachTopics.push(t); }
+  const main = coachTopics[0];
+  const d = (x) => x.toLocaleDateString("en-HK", { day: "numeric", month: "short" });
+
+  // ---- per team member ----
+  const who = (e) => e.sender || "No name recorded (older data)";   // events logged before sender names were saved
+  const byPerson = {};
+  for (const e of week) {
+    const p = byPerson[who(e)] ||= { name: who(e), scanned: 0, flagged: 0, blocked: 0, returned: 0, approved: 0, edited: 0, issues: {} };
+    if (e.type === "scanned") { p.scanned++; if (e.flagged) { p.flagged++; new Set(e.patterns || []).forEach(x => { p.issues[x] = (p.issues[x] || 0) + 1; }); } }
+    else if (p[e.type] != null) p[e.type]++;
+  }
+  const people = Object.values(byPerson).sort((a, b) => b.flagged - a.flagged || b.blocked - a.blocked || a.name.localeCompare(b.name));
+  const maxFlag = Math.max(1, ...people.map(p => p.flagged));
+  const initials = (n) => n.split(/\s+/).map(w => w[0] || "").join("").slice(0, 2).toUpperCase();
+  const personRows = people.map(p => {
+    const issues = Object.entries(p.issues).sort((a, b) => b[1] - a[1]);
+    const t = issues.length ? trainingFor(issues[0][0]) : null;
+    return `<tr>
+      <td class="who"><span class="avatar">${esc(initials(p.name))}</span>${esc(p.name)}</td>
+      <td class="n">${p.scanned}</td>
+      <td class="n">${p.flagged}${p.scanned ? ` <span style="color:#6b7280">(${pct(p.flagged, p.scanned)}%)</span>` : ""}<span class="bar-mini" style="width:${Math.round(40 * p.flagged / maxFlag)}px"></span></td>
+      <td class="n">${p.blocked}</td>
+      <td class="n">${p.returned}</td>
+      <td>${issues.slice(0, 3).map(([x, n]) => `<span class="tag t-red">${esc(x)} ×${n}</span>`).join("") || `<span class="tag t-green">No issues</span>`}</td>
+      <td>${t ? esc(t.topic) : "—"}</td>
+    </tr>`;
+  }).join("");
+
+  // ---- incident log: who, what, outcome ----
+  const OUT = { scanned: ["Warned", "t-amber"], blocked: ["Sent to manager", "t-red"], approved: ["Approved as is", "t-green"], edited: ["Edited by manager", "t-blue"], returned: ["Returned to sender", "t-grey"] };
+  const incidents = week.filter(e => (e.type === "scanned" && e.flagged) || ["blocked", "approved", "edited", "returned"].includes(e.type))
+    .sort((a, b) => new Date(b.ts) - new Date(a.ts));
+  const incidentRows = incidents.slice(0, 20).map(e => {
+    const t = new Date(e.ts), o = OUT[e.type];
+    return `<tr>
+      <td class="n">${t.toLocaleDateString("en-HK", { weekday: "short", day: "numeric", month: "short" })}<br><span style="color:#6b7280">${t.toLocaleTimeString("en-HK", { hour: "2-digit", minute: "2-digit" })}</span></td>
+      <td class="who">${esc(who(e))}</td>
+      <td>${(e.patterns || []).slice(0, 3).map(x => `<span class="tag ${/HKID|Bank|Card|External recipient \+|Customer list|cost/i.test(x) ? "t-red" : "t-amber"}">${esc(x)}</span>`).join("") || `<span style="color:#6b7280">—</span>`}</td>
+      <td><span class="tag ${o[1]}">${o[0]}</span></td>
+    </tr>`;
+  }).join("");
+
+  box.innerHTML = `
+    <div class="report-head">
+      <div><h2>Weekly Report — team &amp; individual coaching</h2>
+        <p>${d(since)} – ${d(now)} · whole team · source: ${esc(source)}</p></div>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost" id="reportRefresh">&#8635; Refresh report</button>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">Emails scanned</div><div class="val">${scanned.length}</div><div class="sub">by the DLP guard · ${people.length} team member(s)</div></div>
+      <div class="kpi"><div class="lbl">Emails flagged</div><div class="val">${flagged.length}</div><div class="sub">${pct(flagged.length, scanned.length)}% of scanned</div></div>
+      <div class="kpi"><div class="lbl">Sent for approval</div><div class="val">${blocked}</div><div class="sub">${returned} returned · ${edited} edited</div></div>
+      <div class="kpi"><div class="lbl">False positives</div><div class="val">${approved}</div><div class="sub">"Approve as is" · ${pct(approved, reviews)}% of ${reviews} review(s)</div></div>
+    </div>
+    <div class="report-grid">
+      <div class="card">
+        <h3>Top flag categories</h3>
+        ${top.length ? `<ol class="rank">${top.map(([label, n], i) => `
+          <li><span class="pos">${i + 1}</span><span class="name">${esc(label)}</span>
+              <span class="num">${n} email${n === 1 ? "" : "s"} · ${pct(n, flagged.length)}% of flagged</span></li>`).join("")}</ol>`
+          : `<p style="color:#6b7280;margin:0">No flagged emails this week. 🎉</p>`}
+        <p class="privacy" style="margin-top:10px">An email can match more than one category, so percentages can add up to more than 100%.</p>
+      </div>
+      <div class="card coach">
+        <h3>Suggested training topic</h3>
+        ${main ? `<div class="topic">${esc(main.topic)}</div>
+          <ul>${main.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul>
+          ${coachTopics[1] ? `<p style="font-size:13px;margin:10px 0 0">Also worth a quick refresher: <b>${esc(coachTopics[1].topic)}</b></p>` : ""}`
+          : `<p style="margin:0;font-size:13px">Not enough data yet. Once emails are flagged, a topic will be suggested here.</p>`}
+        ${approved && pct(approved, reviews) >= 30 ? `<p style="font-size:13px;margin:10px 0 0">⚙️ ${pct(approved, reviews)}% of reviews were approved as is — some rules may be too strict. Consider tuning them with Compliance.</p>` : ""}
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>By team member</h3>
+      ${people.length ? `<div class="tablewrap"><table class="people">
+        <thead><tr><th>Team member</th><th>Scanned</th><th>Flagged</th><th>Sent to manager</th><th>Returned</th><th>Their most common issues</th><th>Coaching focus</th></tr></thead>
+        <tbody>${personRows}</tbody></table></div>` : `<p style="color:#6b7280;margin:0">No activity recorded this week.</p>`}
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Incident log — who triggered what</h3>
+      ${incidentRows ? `<div class="tablewrap"><table class="people">
+        <thead><tr><th>When</th><th>Team member</th><th>Issue</th><th>Outcome</th></tr></thead>
+        <tbody>${incidentRows}</tbody></table></div>
+        ${incidents.length > 20 ? `<p class="privacy" style="margin-top:8px">Showing the latest 20 of ${incidents.length}.</p>` : ""}`
+        : `<p style="color:#6b7280;margin:0">No incidents this week.</p>`}
+    </div>
+    <p class="privacy">🔒 Names are shown so you can coach each person individually — discuss results one-to-one rather than sharing this page with the whole team. Only issue categories are stored, never email addresses or email content. Staff should be told that outgoing email is checked (PDPO good practice).
+      &nbsp;<button class="muted-btn" id="seedBtn">Add a sample week of data (demo)</button> · <button class="muted-btn" id="resetBtn">Reset statistics</button></p>`;
+  $("reportRefresh").onclick = renderReport;
+  $("seedBtn").onclick = async () => { await STATS.logMany(sampleWeek()); renderReport(); };
+  $("resetBtn").onclick = async () => { if (confirm("Delete all DLP statistics? This cannot be undone.")) { await STATS.reset(); renderReport(); } };
+}
+
+// Realistic demo data for the pitch (marked demo:true): four team members with different habits
+function sampleWeek() {
+  const ev = [], now = Date.now();
+  let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const when = () => new Date(now - rnd() * 6.5 * 864e5).toISOString();
+  const TEAM = [
+    { name: "Amy Lau",   scans: 22, flags: [["External recipient + Internal cost / pricing", "Internal cost / pricing"], ["External recipient + Internal cost / pricing", "Confidential info"], ["External recipient (no sensitive content)"]], rate: 0.32, blocked: 3, returned: 2, approved: 0, edited: 1 },
+    { name: "Ben Lam",   scans: 18, flags: [["HKID number in attachment", "Customer list in attachment", "Bank account in attachment"], ["HKID number", "Bank account"]], rate: 0.28, blocked: 2, returned: 1, approved: 1, edited: 0 },
+    { name: "Carmen Ho", scans: 15, flags: [["Phone number"]], rate: 0.07, blocked: 0, returned: 0, approved: 0, edited: 0 },
+    { name: "Derek Chow", scans: 12, flags: [["Confidential info"], ["External recipient + Confidential info", "Confidential info"]], rate: 0.25, blocked: 1, returned: 0, approved: 1, edited: 0 }
+  ];
+  for (const m of TEAM) {
+    for (let i = 0; i < m.scans; i++) {
+      const p = rnd() < m.rate ? m.flags[Math.floor(rnd() * m.flags.length)] : null;
+      ev.push({ type: "scanned", sender: m.name, ts: when(), demo: true, flagged: !!p, highRisk: !!p && !/^Phone/.test(p[0]),
+                unverified: p && /^External/.test(p[0]) ? 1 : 0, patterns: p || [] });
+    }
+    for (const type of ["blocked", "returned", "approved", "edited"])
+      for (let i = 0; i < m[type]; i++) ev.push({ type, sender: m.name, ts: when(), demo: true, patterns: m.flags[0] });
+  }
+  return ev;
+}
+
+$("refreshBtn").onclick = refresh;
+// pick up new requests automatically when employee.html saves one (same browser, another tab)
+window.addEventListener("storage", (e) => { if (e.key === CONFIG.STORAGE_KEY && mode === "view") refresh(); });
+// check localStorage every 2 seconds; only redraw when the pending request changed and the manager isn't mid-edit
+setInterval(() => {
+  const p = loadPending();
+  $("checked").textContent = "Auto-checking every 2s · last " + new Date().toLocaleTimeString("en-HK");
+  if (mode !== "view") return;
+  if ((p && p.id) !== (current && current.id)) refresh();
+}, CONFIG.POLL_MS);
+
+refresh();
+</script>
+</body>
+</html>
